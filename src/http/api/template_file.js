@@ -24,3 +24,12 @@ export const getTemplateFileApi=(file_uuid)=>{
         responseType: 'blob' // 响应类型设置为arraybuffer
     });
 }
+
+//获取帮助文档
+export const getHelpFileApi=()=>{
+    return serviceAxios({
+        url: "/ip/download_help/",
+        method: "get",
+        responseType: 'blob' // 响应类型设置为arraybuffer
+    });
+}

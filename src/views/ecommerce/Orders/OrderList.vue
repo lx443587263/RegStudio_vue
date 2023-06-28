@@ -109,15 +109,15 @@
           variant="outline"
           @click="exportDialogExcelVisible=true"
         >
-        <span class="btn-inner--icon">
+          <span class="btn-inner--icon">
             <i class="ni ni-archive-2"></i>
           </span>
           <span class="btn-inner--text">导出Excel</span>
         </argon-button>
         <el-dialog v-model="exportDialogExcelVisible" class="dialogLarge" title="导出" append-to-body :destroy-on-close="true">
-          <el-input v-model="start_addr" filterable placeholder="请输入起始地址">
+          <el-input v-model="start_addr" filterable placeholder="请输入起始地址" style="width: 200px;">
           </el-input>
-          <el-button type="primary" style="margin-left: 10px;" @click="downloadReg" >导出</el-button>
+          <el-button type="primary" style="margin-left: 10px;padding: 10px;" @click="downloadReg" >导出</el-button>
           <div id="bodyContainer"></div>
         </el-dialog>
 

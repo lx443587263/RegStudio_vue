@@ -1,10 +1,10 @@
 <template>
   <div class="container-fluid">
-    <div  style="margin-top: 20px;">
+    <!-- <div  style="margin-top: 20px;">
         <router-link :to="{ name: 'New User' }">
           <argon-button v-permission="['admin',]" color="white" variant="outline">New User</argon-button>
         </router-link>
-    </div>
+    </div> -->
     <div class="card" style="margin-top: 30px;">
       <div class="container-fluid py-4">
         <el-table :data="users" style="width: 100%">
@@ -85,7 +85,7 @@ import { ElTable, ElTableColumn, ElButton } from 'element-plus';
 import {userDelete,userEdit} from "@/http/api/user"
 // import { useStore } from 'vuex';
 import { useState } from '@/store/hook/useState'
-import ArgonButton from "@/components/ArgonButton.vue";
+// import ArgonButton from "@/components/ArgonButton.vue";
 import { passwordEdit } from "@/http/api/user";
 import { ElMessage } from 'element-plus'
 
@@ -97,7 +97,7 @@ export default {
     ElTable,
     ElTableColumn,
     ElButton,
-    ArgonButton
+    // ArgonButton
   },
   setup() {
     // const store = useStore()
@@ -170,7 +170,7 @@ export default {
         ElMessage({
           showClose: true,
           message: res,
-          type: 'success',
+          type: 'success', 
         })
       }
       )

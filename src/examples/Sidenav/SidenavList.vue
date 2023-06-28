@@ -295,11 +295,11 @@
           </template>
           <template #list>
             <ul class="nav ms-4">
-              <sidenav-item
+              <!-- <sidenav-item
                 :to="{ name: 'Reset Illustration' }"
                 mini-icon="I"
                 text="重置密码"
-              />
+              /> -->
               <sidenav-item
                 :to="{ name: 'Reports' }"
                 mini-icon="R"
@@ -928,7 +928,6 @@ import SidenavCard from "./SidenavCard.vue";
 import { getCategoryIPApi, } from "@/http/api/ip"
 import { mapState } from 'vuex';
 
-
 // import SidenavCollapseItem from "./SidenavCollapseItem.vue";
 
 export default {
@@ -957,6 +956,7 @@ export default {
     }
   },
   methods: {
+
     getRoute() {
       const routeArr = this.$route.path.split("/");
       return routeArr[1];

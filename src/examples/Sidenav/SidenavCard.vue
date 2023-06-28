@@ -28,13 +28,18 @@
           :class="`btn btn-${color} btn-sm w-100 ${
             index === 0 ? 'mb-3' : 'mb-0'
           }`"
+          @click="download_help_doc"
           >{{ label }}</a
         >
       </div>
     </div>
   </div>
 </template>
+
 <script>
+
+import {getHelpFileApi} from "@/http/api/template_file";
+import { saveAs } from "file-saver";
 export default {
   name: "SidenavCard",
   props: {
@@ -53,6 +58,14 @@ export default {
   },
   data() {
     return {};
+  },
+  methods:{
+    download_help_doc(){
+      getHelpFileApi().then((res)=>{
+        console.log(res)
+        saveAs(res, "RegStudio使用手册.docx");
+      })
+    },
   }
 };
 </script>

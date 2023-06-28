@@ -18,6 +18,7 @@
                         v-permission="['admin', 'edit', 'create',]" @click="insertEvent">Add</el-button>
                 </div>
                 <div v-show="tableData.length != 0" class="addbutton">
+                    <argon-button variant="gradient" style="padding: 10px;" @click="showIpPage=true">IP page</argon-button>
                     <router-link :to="{ name: 'Charts' }" style="padding: 10px;">
                         <argon-button variant="gradient"><i class="vxe-icon-chart-bar-x"></i> Reg Graph</argon-button>
                     </router-link>
@@ -141,6 +142,25 @@
                                 <input v-model.lazy="row[col.prop]" class="generl_input__inner" :placeholder="row[col.prop]">
                             </template>
                         </vxe-column>
+                        <vxe-column title="Tag">
+                            <template #default="{row}">
+                                <el-popover placement="top-start" title="注意" :width="200" trigger="hover">
+                                    <p v-show="row.tag == 'review'" style="color: red;">Reg需要修改</p>
+                                    <p v-show="row.tag == 'pass'">通过</p>
+                                    <p v-show="row.tag == 'draft'">Reg未评审</p>
+                                    <div style="text-align: right; margin: 0">
+                                    <el-button 
+                                        v-permission="['admin','edit','create']" size="small"
+                                        type="primary" @click="row.tag = 'pass'">pass</el-button>
+                                    </div>
+                                    <template #reference>
+                                    <el-tag 
+                                        :type="row.tag === 'pass' ? 'success' : row.tag === 'review' ? 'danger' : 'info'"
+                                        disable-transitions>{{ row.tag }}</el-tag>
+                                    </template>
+                                </el-popover>
+                            </template>
+                        </vxe-column>
                         <vxe-column title="操作" width="160px">
                             <template #default="{ row }">
                                 <template v-if="isActiveStatus(row)">
@@ -186,6 +206,9 @@
                         </span>
                     </template>
                 </el-dialog>
+                <el-dialog v-model="showIpPage">
+                    test
+                </el-dialog>
             </div>
         </div>
     </div>
@@ -212,6 +235,7 @@ export default {
         ArgonButton,
     },
     setup() {
+        const showIpPage = ref(false)
         //***************tableEdit****************/
         const columnList = reactive([
             { prop: "offset", label: 'Offset',  width: 100 },
@@ -221,6 +245,7 @@ export default {
             { prop: "reg_ram", label: 'Reg/Ram',  width: 100 },
             { prop: "retention", label: 'Retention',  width: 100 },
             { prop: "description", label: 'Description',  width: 200 },
+            // { prop: "tag", label: 'Tag',  width: 200 },
         ])
 
         const regColumnList = reactive([
@@ -247,6 +272,13 @@ export default {
             ],
             reg_gather_name: [
                 { required: true, message: '必填项' }
+            ],
+            reg_ram:[
+                { pattern: 'reg|ram|Reg|Ram|REG|RAM', message: '输入不正确,必须为reg/ram' }
+            ],
+            retention:
+            [
+                { pattern: 'y|n|Y|N', message: '输入不正确,必须为y/n' }
             ],
             start_bit:[ 
                 {
@@ -437,7 +469,6 @@ export default {
 
             //     const { row: newRow } = await $table.insertAt(record)
             //     await $table.setEditCell(newRow,'reg_gather_name')
-
             $table.insertAt({}, row || -1).then(async ({ row }) => {
                 let idx;
                 let offset_temp;
@@ -467,6 +498,7 @@ export default {
                     }
                 })
                 await $table.setEditCell(row,"reg_gather_name")
+                await $table.isEditByRow(row)
                 if (tableData.value.length !== 0) {
                     tableData.value.splice(idx, 0, row)
                 } else {
@@ -542,6 +574,7 @@ export default {
         }
         
 
+
         // 删除集合表格一行
         const delRegGatherRow = (row) => {
             const index = tableData.value.findIndex(item => item.reg_gather_uuid === row.reg_gather_uuid)
@@ -575,7 +608,7 @@ export default {
                 })
 
                 const { row: newRow } = await $table.insertAt(record)
-                await $table.setEditCell(newRow,'reg_gather_name')
+                $table.setEditCell(newRow,"reg_gather_name")
                 tableData.value[0] = newRow
             }
             }
@@ -589,10 +622,13 @@ export default {
                     values: [],
                 }
                 const { row: newRow } = await $table.insertAt(record, row)
+                await $table.isEditByRow(newRow)
+
                 regColumnList.forEach(p => {
                     $table.setEditCell(newRow, p.prop)
                 })
                 // await $table.setEditCell(newRow)
+
                 if (regGatherRow.singleReg.length != 0) {
                     regGatherRow.singleReg.splice(index + 1, 0, newRow)
                 } else {
@@ -672,6 +708,7 @@ export default {
                                     if (j == "note") {
                                         if (tableData.value[i][key][sr]["note"]) {
                                             gatherObj["tag"] = "review"
+                                            tableData.value[i]["tag"] = "review"
                                         }
                                     }
                                     singleObj[j] = tableData.value[i][key][sr][j]
@@ -775,6 +812,7 @@ export default {
                     if (newIndex == oldIndex) return;
                     tableData.value.splice(newIndex, 0, tableData.value.splice(oldIndex, 1)[0]);
                     var newArray = tableData.value.slice(0);
+
                     // tableData.value= [];
                     nextTick(function () {
                         // tableData.value= newArray;
@@ -1016,6 +1054,7 @@ export default {
             fullValidEvent,
             selectValidEvent,
             loadContentMethod,
+            showIpPage,
         }
 
 
