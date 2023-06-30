@@ -33,7 +33,6 @@ const IP={
     mutations: {
         getIpList:function(state,list){
             state.ip_lists = list;
-
         },
         setCurrentIpUuid(state,ip_uuid){
             state.current_ip_uuid = ip_uuid

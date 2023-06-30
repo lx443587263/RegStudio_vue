@@ -3,9 +3,9 @@
     <div class="d-sm-flex justify-content-between">
       <div class="button-container">
         <router-link :to="{ name: 'New Project' }" >
-          <argon-button v-permission="['admin','edit','create','delete','read']" color="white" variant="outline">新建IP</argon-button>
+          <argon-button v-permission="['admin','edit','create','delete','read']" color="white" variant="outline"><el-icon><Plus /></el-icon> 新建IP</argon-button>
         </router-link>
-        <argon-button v-permission="['admin','edit','create','delete','read']" color="white" variant="outline" @click="deleteIpAll">删除IP</argon-button>
+        <argon-button v-permission="['admin','edit','create','delete','read']" color="white" variant="outline" @click="deleteIpAll"><el-icon><Delete /></el-icon> 删除IP</argon-button>
         <argon-button v-permission="['admin','edit','create','delete','read']" color="white" variant="outline" @click="createNewVersion">新建新版本</argon-button>
         <argon-button v-permission="['admin','edit','create','delete','read']" color="white" variant="outline" @click="dialogVisible = true">导入IP</argon-button>
         <!-- <argon-button v-permission="['admin',]" color="white" variant="outline" @click="importIP">test</argon-button> -->
@@ -118,7 +118,7 @@
           <el-input v-model="start_addr" filterable placeholder="请输入起始地址" style="width: 200px;">
           </el-input>
           <el-button type="primary" style="margin-left: 10px;padding: 10px;" @click="downloadReg" >导出</el-button>
-          <div id="bodyContainer"></div>
+          <!-- <div id="bodyContainer"></div> -->
         </el-dialog>
 
 
@@ -134,15 +134,29 @@
           </span>
           <span class="btn-inner--text">导出Word</span>
         </argon-button>
-        <el-dialog v-model="exportDialogVisible" class="dialogLarge" title="导出" append-to-body :destroy-on-close="true">
-          <el-select v-model="file_uuid" filterable placeholder="请选择spec模版">
+        <el-dialog v-model="exportDialogVisible" class="dialogLarge" title="导出word" append-to-body :destroy-on-close="true">
+          <p>序章</p>
+          <div style="padding-bottom: 10px;">
+            <el-select v-model="ip_page_file_uuid" filterable placeholder="请选择序章">
+            <el-option v-for="(item,index) in ip_page_list" :key="index" :label="item.name" :value="item.file_uuid">
+              {{ item.name+"("+item.version+")" }}
+            </el-option>
+            </el-select>
+            <el-button :disabled="isIpPageExportDisabled" type="primary" style="margin-left: 10px;" @click="generate(true,true)" >预览</el-button>
+            <el-button :disabled="isIpPageExportDisabled" type="primary" style="margin-left: 10px;" @click="generate(false,true)" >导出</el-button>
+          </div>
+          <p>列表</p>
+          <div>
+            <el-select v-model="file_uuid" filterable placeholder="请选择spec模版">
             <el-option v-for="(item,index) in template_file_list" :key="index" :label="item.name" :value="item.file_uuid">
               {{ item.name }}
             </el-option>
-          </el-select>
-          <el-button :disabled="isExportDisabled" type="primary" style="margin-left: 10px;" @click="generate" >预览</el-button>
-          <el-button :disabled="isExportDisabled" type="primary" style="margin-left: 10px;" @click="exportDocx" >导出</el-button>
-          <div id="bodyContainer"></div>
+            </el-select>
+            <el-button :disabled="isExportDisabled" type="primary" style="margin-left: 10px;" @click="generate(true,false)" >预览</el-button>
+            <el-button :disabled="isExportDisabled" type="primary" style="margin-left: 10px;" @click="generate(false,false)" >导出</el-button>
+          </div>
+
+          <!-- <div id="bodyContainer"></div> -->
         </el-dialog>
       </div>
     </div>
@@ -271,6 +285,10 @@
             >
               <el-transfer v-model="see_permission" :data="userData" />
             </el-dialog>
+            <el-dialog v-model="PerviewDisable" titile="预览" class="dialogLarge"  :lock-scroll="true" width="60%" append-to-body :destroy-on-close="true">
+                <div id="bodyContainer">
+                </div>
+            </el-dialog>
           </div>
         </div>
       </div>
@@ -282,7 +300,7 @@
 // import { DataTable } from "simple-datatables";
 import ArgonButton from "@/components/ArgonButton.vue";
 import { mapState } from 'vuex';
-import { getIpListApi,deleteIp,} from "@/http/api/ip"
+import { getIpListApi,deleteIp,getIpPageFileApi,perviewIpPageFileApi} from "@/http/api/ip"
 import { getRegGatherList } from "@/http/api/reggather"
 import { editIpVersion } from '@/http/api/ip';
 import { v4 as uuidv4 } from 'uuid';
@@ -311,6 +329,7 @@ export default {
       current_user:localStorage.getItem('user'),
       bankendServeIP:localStorage.getItem("backendIp")+"ip/upload_file/",
       reg_gather_list:[],
+      ip_page_list:[],
       selList:[],
       userData:[],
       columnList: [
@@ -344,9 +363,11 @@ export default {
         ip_uuid: "",
       },
       file_uuid:"",
+      ip_page_file_uuid:"",
       start_addr:"",
       condition:true,
       exportCondition:true,
+      exportConditionIpPage:true,
       isExport:false,
       docxOptions: {
         className: "kaimo-docx-666", // string：默认和文档样式类的类名/前缀
@@ -363,6 +384,7 @@ export default {
         showChanges: false, // boolean：启用文档更改的实验性渲染（插入/删除）
         debug: false, // boolean：启用额外的日志记录
       },
+      PerviewDisable:false,
       reg_hex: {
         1: "0x01",
         2: "0x03",
@@ -411,6 +433,9 @@ export default {
     },
     isExportDisabled(){
       return this.exportCondition;
+    },
+    isIpPageExportDisabled(){
+      return this.exportConditionIpPage
     }
   },
 
@@ -423,6 +448,11 @@ export default {
     'file_uuid'(newValue){
       if(newValue){
         this.exportCondition=false
+      }
+    },
+    'ip_page_file_uuid'(newValue){
+      if(newValue){
+        this.exportConditionIpPage=false
       }
     }
   },
@@ -593,6 +623,9 @@ export default {
             this.reg_gather_list.push(regGatherTemp)
             this.reg_gather_list.sort(this.compareAsc("offset"))
           }
+        })
+        getIpPageFileApi(this.selList[idx].ip_uuid).then((res)=>{
+          this.ip_page_list = res
         })
       }
     },
@@ -825,81 +858,116 @@ export default {
       }
       return value;
     },
-    //读取word模版并插入数据
-    generate() {
-      var test_list = this.reg_gather_list
-      if (test_list.length>0) {
-        getTemplateFileApi(this.file_uuid).then(response => {
-          var reader = new FileReader();
-          const templateContent = response;
-          reader.readAsBinaryString(templateContent);
-          reader.onerror = function (evt) {
-            console.log("error reading file", evt);
-            alert("error reading file" + evt);
-          };
-          reader.onload = function (evt) {
-            const content = evt.target.result;
-            var zip = new PizZip(content);
-            var doc = new Docxtemplater(zip, {
-              paragraphLoop: true,
-              linebreaks: true,
-            });
 
-            doc.setData({
-              // ...this.reg_gather_list,
-              list: test_list
-            });
-            try {
-              // render the document (replace all occurences of {first_name} by John, {last_name} by Doe, ...)
-              doc.render();
-            } catch (error) {
-              // The error thrown here contains additional information when logged with JSON.stringify (it contains a properties object containing all suberrors).
+    //加载word文档数据
+    loadDocxFun(response,data_list,isPeriview,docName,isHeader){
+      var reader = new FileReader();
+      const templateContent = response;
+      reader.readAsBinaryString(templateContent);
 
-              console.log(JSON.stringify({ error: error }, this.replaceErrors));
+      reader.onerror = function (evt) {
+        console.log("error reading file", evt);
+        alert("error reading file" + evt);
+      };
+      reader.onload = function (evt) {
+        const content = evt.target.result;
+        var zip = new PizZip(content);
+        var doc = new Docxtemplater(zip, {
+          paragraphLoop: true,
+          linebreaks: true,
+        });
 
-              if (error.properties && error.properties.errors instanceof Array) {
-                const errorMessages = error.properties.errors
-                  .map(function (error) {
-                    return error.properties.explanation;
-                  })
-                  .join('\n');
-                console.log('errorMessages', errorMessages);
-                // errorMessages is a humanly readable message looking like this :
-                // 'The tag beginning with "foobar" is unopened'
-              }
-              throw error;
-            }
-            // 进行渲染和预览
-            var blob = doc.getZip().generate({
-              type: "blob",
-              mimeType:
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-              compression: "DEFLATE",
-            });
-            // console.log(doc.getFullText())
-            // Output the document using Data-URI
-            // 将file转为buffer
-            let fr = new FileReader();
-            fr.readAsBinaryString(blob)
-            // fr.readAsArrayBuffer(file);
-            fr.addEventListener("loadend",(e) => {
-                console.log("loadend---->", e)
-                let buffer = e.target.result;
-                // let bodyContainer = document.getElementById("Container");
-                let bodyContainer = document.getElementById("bodyContainer");
-                renderAsync(
-                    buffer, // Blob | ArrayBuffer | Uint8Array, 可以是 JSZip.loadAsync 支持的任何类型
-                    bodyContainer, // HTMLElement 渲染文档内容的元素,
-                    null, // HTMLElement, 用于呈现文档样式、数字、字体的元素。如果为 null，则将使用 bodyContainer。
-                    this.docxOptions // 配置
-                ).then(res => {
-                    console.log("res---->", res)
-                })
-            },false);
+        if(!isHeader){
+          doc.setData({
+                // ...this.reg_gather_list,
+                list: data_list
+              });
+        }
+   
+        try {
+          // render the document (replace all occurences of {first_name} by John, {last_name} by Doe, ...)
+          doc.render();
+        } catch (error) {
+          // The error thrown here contains additional information when logged with JSON.stringify (it contains a properties object containing all suberrors).
 
-              // saveAs(blob, "output.docx");
+          console.log(JSON.stringify({ error: error }, this.replaceErrors));
+
+          if (error.properties && error.properties.errors instanceof Array) {
+            const errorMessages = error.properties.errors
+              .map(function (error) {
+                return error.properties.explanation;
+              })
+              .join('\n');
+            console.log('errorMessages', errorMessages);
+            // errorMessages is a humanly readable message looking like this :
+            // 'The tag beginning with "foobar" is unopened'
           }
-        })
+          throw error;
+        }
+        // 进行渲染和预览
+        var blob = doc.getZip().generate({
+          type: "blob",
+          mimeType:
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          compression: "DEFLATE",
+        });
+        if(isPeriview){
+          // Output the document using Data-URI
+          // 将file转为buffer
+          let fr = new FileReader();
+          fr.readAsBinaryString(blob)
+          // fr.readAsArrayBuffer(file);
+          fr.addEventListener("loadend",(e) => {
+              console.log("loadend---->", e)
+              let buffer = e.target.result;
+              // let bodyContainer = document.getElementById("Container");
+              let bodyContainer = document.getElementById("bodyContainer");
+              renderAsync(
+                  buffer, // Blob | ArrayBuffer | Uint8Array, 可以是 JSZip.loadAsync 支持的任何类型
+                  bodyContainer, // HTMLElement 渲染文档内容的元素,
+                  null, // HTMLElement, 用于呈现文档样式、数字、字体的元素。如果为 null，则将使用 bodyContainer。
+                  this.docxOptions // 配置
+              ).then(res => {
+                  console.log("res---->", res)
+              })
+          },false);
+        }else{
+          saveAs(blob, `${docName}.docx`);
+        }
+      }
+    },
+
+    //读取word模版并插入数据
+    generate(isPeriview,isHeader) {
+      if (this.selList.length != 0) {
+        for (var i in this.selList) {
+          let docName = `${this.selList[i].ip_name}(${this.selList[i].version})`
+          if(isHeader){
+            docName=docName+"_HEADER"
+          }
+          const temp_list = this.reg_gather_list.filter(item => item.ip_uuid === this.selList[i].ip_uuid)
+          if (temp_list.length>0) {
+            if(isPeriview){
+              this.PerviewDisable = true
+            }
+            if(!isHeader){
+              getTemplateFileApi(this.file_uuid).then(response => {
+                this.loadDocxFun(response,temp_list,isPeriview,docName,isHeader)
+              })
+            }else{
+              perviewIpPageFileApi(this.ip_page_file_uuid).then(response => {
+                this.loadDocxFun(response,temp_list,isPeriview,docName,isHeader)
+              })
+            }
+
+          }else{
+            ElMessage({
+              showClose: true,
+              message: '无寄存器',
+              type: 'error',
+            })
+          }
+        }
       }else{
         ElMessage({
           showClose: true,
@@ -907,7 +975,6 @@ export default {
           type: 'error',
         })
       }
-
 
         // var test_list = this.reg_gather_list
         // var docs = document.getElementById("doc");
@@ -984,73 +1051,81 @@ export default {
         // };
     },
 
-    exportDocx(){
-      if (this.selList.length != 0) {
-        for (var i in this.selList) {
-          const temp_list = this.reg_gather_list.filter(item => item.ip_uuid === this.selList[i].ip_uuid)
-          getTemplateFileApi(this.file_uuid).then(response => {
-            var reader = new FileReader();
-            const templateContent = response;
-            reader.readAsBinaryString(templateContent);
-            reader.onerror = function (evt) {
-              console.log("error reading file", evt);
-              alert("error reading file" + evt);
-            };
-            const docName = `${this.selList[i].ip_name}(${this.selList[i].version})`
-            reader.onload = function (evt) {
-              const content = evt.target.result;
-              var zip = new PizZip(content);
-              var doc = new Docxtemplater(zip, {
-                paragraphLoop: true,
-                linebreaks: true,
-              });
 
-              doc.setData({
-                // ...this.reg_gather_list,
-                list: temp_list
-              });
-              try {
-                // render the document (replace all occurences of {first_name} by John, {last_name} by Doe, ...)
-                doc.render();
-              } catch (error) {
-                // The error thrown here contains additional information when logged with JSON.stringify (it contains a properties object containing all suberrors).
+    // exportDocx() {
+    //   if (this.selList.length != 0) {
+    //     for (var i in this.selList) {
+    //       const temp_list = this.reg_gather_list.filter(item => item.ip_uuid === this.selList[i].ip_uuid)
+    //       if (temp_list.length > 0) {
+    //         getTemplateFileApi(this.file_uuid).then(response => {
+    //           var reader = new FileReader();
+    //           const templateContent = response;
+    //           reader.readAsBinaryString(templateContent);
+    //           reader.onerror = function (evt) {
+    //             console.log("error reading file", evt);
+    //             alert("error reading file" + evt);
+    //           };
+    //           reader.onload = function (evt) {
+    //             const content = evt.target.result;
+    //             var zip = new PizZip(content);
+    //             var doc = new Docxtemplater(zip, {
+    //               paragraphLoop: true,
+    //               linebreaks: true,
+    //             });
+    //             doc.setData({
+    //               // ...this.reg_gather_list,
+    //               list: temp_list
+    //             });
+    //             try {
+    //               // render the document (replace all occurences of {first_name} by John, {last_name} by Doe, ...)
+    //               doc.render();
+    //             } catch (error) {
+    //               // The error thrown here contains additional information when logged with JSON.stringify (it contains a properties object containing all suberrors).
 
-                console.log(JSON.stringify({ error: error }, this.replaceErrors));
+    //               console.log(JSON.stringify({ error: error }, this.replaceErrors));
+    //               if (error.properties && error.properties.errors instanceof Array) {
+    //                 const errorMessages = error.properties.errors
+    //                   .map(function (error) {
+    //                     return error.properties.explanation;
+    //                   })
+    //                   .join('\n');
+    //                 console.log('errorMessages', errorMessages);
+    //                 // errorMessages is a humanly readable message looking like this :
+    //                 // 'The tag beginning with "foobar" is unopened'
+    //               }
+    //               throw error;
+    //             }
+    //             // 进行渲染和预览
+    //             var blob = doc.getZip().generate({
+    //               type: "blob",
+    //               mimeType:
+    //                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    //               compression: "DEFLATE",
+    //             });
+    //             // console.log(doc.getFullText())
+    //             // Output the document using Data-URI
+    //             // 将file转为buffer
+    //             const docName = `${this.selList[i].ip_name}(${this.selList[i].version})`
+    //             saveAs(blob, `${docName}.docx`);
+    //           }
+    //         })
 
-                if (error.properties && error.properties.errors instanceof Array) {
-                  const errorMessages = error.properties.errors
-                    .map(function (error) {
-                      return error.properties.explanation;
-                    })
-                    .join('\n');
-                  console.log('errorMessages', errorMessages);
-                  // errorMessages is a humanly readable message looking like this :
-                  // 'The tag beginning with "foobar" is unopened'
-                }
-                throw error;
-              }
-              // 进行渲染和预览
-              var blob = doc.getZip().generate({
-                type: "blob",
-                mimeType:
-                  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                compression: "DEFLATE",
-              });
-              // console.log(doc.getFullText())
-              // Output the document using Data-URI
-              // 将file转为buffer
-              saveAs(blob, `${docName}.docx`);
-            }
-          })
-        }
-      } else{
-        ElMessage({
-          showClose: true,
-          message: 'There is no tick IP.',
-          type: 'error',
-        })
-      }
-    },
+    //       } else {
+    //         ElMessage({
+    //           showClose: true,
+    //           message: 'There is no Reg.',
+    //           type: 'error',
+    //         })
+    //       }
+    //     }
+    //   } else {
+    //     ElMessage({
+    //       showClose: true,
+    //       message: 'There is no tick IP.',
+    //       type: 'error',
+    //     })
+    //   }
+    // },
 
     ...mapMutations('IP',['addNewIP']),
     ...mapMutations('reg_gather',['addReg']),
@@ -1466,7 +1541,10 @@ typedef struct {\r`
 .button-container button {
   margin-right: 6px; /* set the right margin of each button to 10px */
 }
-:deep(.docx-wrapper) {
+
+
+
+/* :deep(.docx-wrapper) {
   background-color: #fff;
   padding: 0;
 }
@@ -1477,5 +1555,5 @@ typedef struct {\r`
   min-height: auto !important;
   box-shadow: none;
   margin-bottom: 0;
-}
+} */
 </style>

@@ -18,12 +18,12 @@
                         v-permission="['admin', 'edit', 'create',]" @click="insertEvent">Add</el-button>
                 </div>
                 <div v-show="tableData.length != 0" class="addbutton">
-                    <argon-button variant="gradient" style="padding: 10px;" @click="showIpPage=true">IP page</argon-button>
+                    <argon-button variant="gradient" style="padding: 10px;" @click="showIpPage=true"><el-icon><Document /></el-icon> IP page</argon-button>
                     <router-link :to="{ name: 'Charts' }" style="padding: 10px;">
                         <argon-button variant="gradient"><i class="vxe-icon-chart-bar-x"></i> Reg Graph</argon-button>
                     </router-link>
                     <router-link :to="{ name: 'Timeline' }">
-                        <argon-button variant="gradient">Modify Timeline</argon-button>
+                        <argon-button variant="gradient"><el-icon><Notebook /></el-icon> Modify Timeline</argon-button>
                     </router-link>
                 </div>
 
@@ -206,9 +206,65 @@
                         </span>
                     </template>
                 </el-dialog>
-                <el-dialog v-model="showIpPage">
-                    test
+                <el-dialog v-model="showIpPage" class="dialogLarge" :lock-scroll="true" append-to-body :destroy-on-close="true" title="Spec文件序章">
+                    <el-form
+                        label-position="top"
+                        label-width="100px"
+                        :model="uploadData"
+                        :rules="rules"
+                        style="max-width: 460px"
+
+                    >
+                        <el-form-item label="文件名" prop="name">
+                            <el-input v-model="uploadData.name" />
+                        </el-form-item>
+                        <el-form-item label="修改内容" prop="commit_content">
+                            <el-input v-model="uploadData.commit_content" />
+                        </el-form-item>
+                        <el-form-item>
+                            <el-upload
+                                ref="upload"
+                                :action=bankendServeIP
+                                :before-upload="beforeUpload"
+                                :on-success="handleUploadSuccess"
+                                :data = "uploadData"
+                                :on-error="handleUploadError"
+                                >
+                                    <template #trigger>
+                                    <div>
+                                        <el-button :disabled="isDisabled" size="small" type="primary" width="60%" style="margin-left: 10px;">选择文件</el-button>
+                                    </div>
+                                    </template>
+                                    <template #tip>
+                                    <div class="el-upload__tip">只能上传word</div>
+                                    </template >
+                            </el-upload>
+                        </el-form-item>
+                    </el-form>
+                    <vxe-table
+                        ref="testTable"
+                        :data="IpPageFileList"
+                        max-height="300px"
+                        :loading = "loading"
+                        >
+                        <vxe-column field="name" title="Name" width="80px"></vxe-column>
+                        <vxe-column field="version" title="Version" width="80px"></vxe-column>
+                        <vxe-column field="commit_content" title="Commit Content" width="150px"></vxe-column>
+                        <vxe-column field="create_user" title="Create User" width="120px"></vxe-column>
+                        <vxe-column field="upload_data" title="Upload Data" width="160px"></vxe-column>
+                        <vxe-column title="Active" width="200px">
+                            <template #default="{ row }">
+                                <el-button type="primary" text @click="expandIpPageFiles(row)">Perview</el-button>
+                                <el-button type="danger" text @click="deleteIpPageFiles(row)">Delete</el-button>
+                            </template>
+                        </vxe-column>
+                    </vxe-table>
                 </el-dialog>
+                <el-dialog v-model="PerviewDisable" titile="预览" class="dialogLarge" :lock-scroll="true" width="60%" append-to-body :destroy-on-close="true">
+                    <div id="bodyContainer">
+                    </div>
+                </el-dialog>
+                
             </div>
         </div>
     </div>
@@ -218,6 +274,7 @@
 import { ref, computed, onMounted, reactive, nextTick, watchEffect} from 'vue';
 import VXETable from 'vxe-table';
 import ArgonButton from "@/components/ArgonButton.vue";
+import { getIpPageFileApi, perviewIpPageFileApi,deleteIpPageFileApi} from "@/http/api/ip"
 import { getRegGatherList,deleteRegGather,addRegGather,editRegGatherApi} from "@/http/api/reggather";
 import { getSingleList,deleteSingle,addSingle,editSingle} from "@/http/api/singlereg";
 import { getValueList,deleteValue,addValue,editValue} from "@/http/api/value";
@@ -225,9 +282,14 @@ import { useStore } from "vuex";
 import { useState } from '@/store/hook/useState';
 import { Delete, MoreFilled, Plus, Edit } from '@element-plus/icons-vue';
 import Sortable from 'sortablejs';
-// import { useRouter } from "vue-router";
+// import { Axios } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import { ElMessageBox } from 'element-plus';
+import PizZip from 'pizzip';
+import Docxtemplater from 'docxtemplater';
+import { renderAsync } from "docx-preview";
+import { ElMessage } from 'element-plus';
+// import { useRouter } from "vue-router";
 
 
 export default {
@@ -235,7 +297,8 @@ export default {
         ArgonButton,
     },
     setup() {
-        const showIpPage = ref(false)
+        const store = useStore();
+        
         //***************tableEdit****************/
         const columnList = reactive([
             { prop: "offset", label: 'Offset',  width: 100 },
@@ -369,6 +432,7 @@ export default {
         }
 
         const storeState = useState('reg_gather_list', ['RegGatherList'])
+        // const storeState = useState('IP', ['RegGatherList'])
         // let tableData = reactive(computed(() => storeState.RegGatherList.value))
 
         //格式化offset
@@ -828,6 +892,8 @@ export default {
         const SinglexTable = ref(null)
         const ValuexTable = ref(null)
         const CurrentTable = ref(null)
+        //预览dialog
+        const PerviewDisable = ref(false)
         //获取当前表格种类
         const getTableCategory = (row) =>{
             CurrentTable.value = row.$table;
@@ -886,7 +952,7 @@ export default {
         }
 
         // const route = useRoute();
-        const store = useStore();
+
         let reg_gather_list = []
         // const router = useRouter();
 
@@ -944,6 +1010,7 @@ export default {
                 store.commit('reg_gather_list/getRegGatherListValue', reg_gather_list)
                 loading.value = false
             })
+
         }
 
         const calculateOffset = (singleList)=>{
@@ -992,7 +1059,154 @@ export default {
             dropTable()
         })
 
+        /***********上传spec序章******* */
+        const showIpPage = ref(false)
+        const bankendServeIP = localStorage.getItem("backendIp")+"ip/ip_page_file/"
+        const fileList = ref([])
+        const isDisabled = ref(true)
+        // const IpPageFileList = ref([])
+        const uploadData = reactive({
+            name: "",
+            version: "",
+            commit_content: "",
+            create_user: localStorage.getItem("user"),
+            upload_data: (new Date()).toLocaleString(),
+            file_uuid: uuidv4(),
+            ip_uuid: store.state.IP.current_ip_uuid
+        })
+        const rules = reactive({
+            name:{required: true, message: '请输入文件名', trigger: 'blur' },
+            commit_content:{required: true, message: '请输入修改概要', trigger: 'blur'},
+        })
+        watchEffect(()=>{
+            if(uploadData.name&&uploadData.commit_content){
+                isDisabled.value=false
+            }else{
+                isDisabled.value=true
+            }
+        })
+        const IpPageFileList = ref([])
+        watchEffect(()=>{
+            if(showIpPage.value){
+                loading.value = true
+                getIpPageFileApi(store.state.IP.current_ip_uuid).then((res)=>{
+                    IpPageFileList.value = res
+                    loading.value = false
+                })
+            }
+        })
 
+        
+        //上传文件
+        const beforeUpload=(file)=>{
+            fileList.value.push(file)
+            if(IpPageFileList.value.length===0){
+                uploadData.version = "1"
+            }else{
+                uploadData.version = (Math.max.apply(Math, IpPageFileList.value.map(function(item) {return item.version}))+1).toString()
+            }
+            // 返回 false 可取消上传
+            return true;
+        }
+        
+        const handleUploadSuccess=(response)=>{
+            // message.success('上传成功')
+            ElMessage({
+              showClose: true,
+              message: response.message?response.message:response.error,
+              type: response.message?'success':'error',
+            })
+            showIpPage.value=false
+        }
+
+        const handleUploadError=(error)=>{
+            console.error(error);
+            ElMessage({
+              showClose: true,
+              message: error,
+              type: 'error',
+            })
+        }
+
+        const expandIpPageFiles=(row)=>{
+            PerviewDisable.value = true
+            perviewIpPageFileApi(row.file_uuid).then(response=>{
+                var reader = new FileReader();
+                const templateContent = response;
+                reader.readAsBinaryString(templateContent);
+                reader.onerror = function (evt) {
+                    console.log("error reading file", evt);
+                    alert("error reading file" + evt);
+                };
+                reader.onload = function (evt) {
+                    const content = evt.target.result;
+                    var zip = new PizZip(content);
+                    var doc = new Docxtemplater(zip, {
+                    paragraphLoop: true,
+                    linebreaks: true,
+                    });
+                    try {
+                    // render the document (replace all occurences of {first_name} by John, {last_name} by Doe, ...)
+                    doc.render();
+                    } catch (error) {
+                    // The error thrown here contains additional information when logged with JSON.stringify (it contains a properties object containing all suberrors).
+
+                    console.log(JSON.stringify({ error: error }, this.replaceErrors));
+
+                    if (error.properties && error.properties.errors instanceof Array) {
+                        const errorMessages = error.properties.errors
+                        .map(function (error) {
+                            return error.properties.explanation;
+                        })
+                        .join('\n');
+                        console.log('errorMessages', errorMessages);
+                        // errorMessages is a humanly readable message looking like this :
+                        // 'The tag beginning with "foobar" is unopened'
+                    }
+                    throw error;
+                    }
+                    // 进行渲染和预览
+                    var blob = doc.getZip().generate({
+                    type: "blob",
+                    mimeType:
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    compression: "DEFLATE",
+                    });
+                    // console.log(doc.getFullText())
+                    // Output the document using Data-URI
+                    // 将file转为buffer
+                    let fr = new FileReader();
+                    fr.readAsBinaryString(blob)
+                    // fr.readAsArrayBuffer(file);
+                    fr.addEventListener("loadend",(e) => {
+                        console.log("loadend---->", e)
+                        let buffer = e.target.result;
+                        // let bodyContainer = document.getElementById("Container");
+                        // document.getElementById("bodyContainer");
+                        let bodyContainer = document.getElementById("bodyContainer");
+                        renderAsync(
+                            buffer, // Blob | ArrayBuffer | Uint8Array, 可以是 JSZip.loadAsync 支持的任何类型
+                            bodyContainer, // HTMLElement 渲染文档内容的元素,
+                            null, // HTMLElement, 用于呈现文档样式、数字、字体的元素。如果为 null，则将使用 bodyContainer。
+                            this.docxOptions // 配置
+                        ).then(res => {
+                            console.log("res---->", res)
+                        })
+                    },false);
+                }
+            })
+        }
+
+        const deleteIpPageFiles=(row)=>{
+            deleteIpPageFileApi(row.file_uuid).then((res)=>{
+                if(res["message"]==="文件删除成功"){
+                    console.log(res)
+                    const index = IpPageFileList.value.findIndex(item=>item.file_uuid === row.file_uuid)
+                    IpPageFileList.value.splice(index,1)
+                    console.log(IpPageFileList.value)
+                }
+            })
+        }
 
         return {
             //拖拽相关
@@ -1054,7 +1268,19 @@ export default {
             fullValidEvent,
             selectValidEvent,
             loadContentMethod,
+            //上传spec序章
             showIpPage,
+            bankendServeIP,
+            beforeUpload,
+            handleUploadSuccess,
+            handleUploadError,
+            uploadData,
+            rules,
+            isDisabled,
+            IpPageFileList,
+            expandIpPageFiles,
+            PerviewDisable,
+            deleteIpPageFiles,
         }
 
 
@@ -1098,5 +1324,9 @@ export default {
     padding: 0 15px;
     transition: border-color .2s cubic-bezier(.645, .045, .355, 1);
 }
+
+/* .expand-wrapper {
+  padding: 20px;
+} */
 </style>
   

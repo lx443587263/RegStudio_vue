@@ -64,3 +64,29 @@ export const editIpVersion=(uuid,data)=>{
     }
   });
 }
+
+//查
+export const getIpPageFileApi=(uuid)=>{
+  return serviceAxios({
+      url: "/ip/ip_page_file/?ip_uuid="+uuid,
+      method: "get",
+  });
+}
+
+
+//读取文件
+export const perviewIpPageFileApi=(file_uuid)=>{
+  return serviceAxios({
+      url: "/ip/download_ip_page_file/?file_uuid="+file_uuid,
+      method: "get",
+      responseType: 'blob' // 响应类型设置为arraybuffer
+  });
+}
+
+//删
+export const deleteIpPageFileApi=(file_uuid)=>{
+  return serviceAxios({
+      url: "/ip/ip_page_file/?file_uuid="+file_uuid,
+      method: "delete",
+  });
+}
