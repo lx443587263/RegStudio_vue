@@ -19,11 +19,33 @@
                     v-permission="['admin','edit','create']"  variant="gradient"
                     @click="dialogVisible = true">Add Category</argon-button>
                   <el-dialog v-model="dialogVisible" title="添加IP类别">
-                    <span>IP 类别</span>
-                    <el-input  v-model="cataegoryData.category" style="width: 100%"></el-input>
-                    <el-button type="primary"  style="margin-top: 10px;" @click="AddCategory">添加</el-button>
+                    <el-form ref="form" :model="cataegoryData" >
+                      <el-form-item label="IP 类别" prop="category">
+                        <el-input v-model="cataegoryData.category"></el-input>
+                      </el-form-item>
+                    </el-form>
+                    <div>
+                      <el-button type="primary" @click="AddCategory">确定</el-button>
+                      <el-button @click="dialogVisible = false">取消</el-button>
+                    </div>
+                    <!-- <span>IP 类别</span>
+                    <el-input v-model="cataegoryData.category" clearable style="width: 100%"></el-input>
+                    <el-button type="primary"  style="margin-top: 10px;" @click="AddCategory">添加</el-button> -->
                   </el-dialog>
-
+                  <el-dialog v-model="dialogEditVisible" title="编辑IP类别">
+                    <el-form ref="form" :model="editData" >
+                      <el-form-item label="IP 类别" prop="category">
+                        <el-input v-model="editData.category"></el-input>
+                      </el-form-item>
+                    </el-form>
+                    <div>
+                      <el-button type="primary" @click="editCategoryData">确定</el-button>
+                      <el-button @click="dialogEditVisible = false">取消</el-button>
+                    </div>
+                    <!-- <span>IP 类别</span>
+                    <el-input v-model="cataegoryData.category" clearable style="width: 100%"></el-input>
+                    <el-button type="primary"  style="margin-top: 10px;" @click="AddCategory">添加</el-button> -->
+                  </el-dialog>
                   <!-- <button type="button" class="mx-1 mb-0 btn btn-outline-success btn-sm" data-bs-toggle="modal"
                     data-bs-target="#import">
                     Import
@@ -69,11 +91,12 @@
           <div class="px-0 pb-0 card-body">
             <div class="container-fluid">
               <div>
-                <el-table :data="category_list">
+                <el-table ref="table" :data="category_list" >
                   <el-table-column prop="category" label="Category"></el-table-column>
                   <el-table-column label="操作">
                     <template #default="scope">
                       <!-- <el-button type="text" @click="handleDownload(scope.row)">下载</el-button> -->
+                      <el-button v-permission="['admin','edit']" size="small" type="primary" @click="handleEdit(scope.row)">编辑</el-button>
                       <el-button v-permission="['admin','delete']" size="small" type="danger" @click="deleteCategory(scope.row)">删除</el-button>
                     </template>
                   </el-table-column>
@@ -89,7 +112,7 @@
 
 <script>
 import ArgonButton from "@/components/ArgonButton.vue";
-import { getCategoryApi,deleteCategoryApi,addCategoryApi } from "@/http/api/category"
+import { getCategoryApi,deleteCategoryApi,addCategoryApi,editCategoryApi } from "@/http/api/category"
 import { mapState } from 'vuex';
 
 
@@ -101,9 +124,11 @@ export default {
   data(){
     return{
       dialogVisible: false,
+      dialogEditVisible: false,
       cataegoryData:{
         category:"",
       },
+      editData:{}
     }
   },
   computed:{
@@ -123,9 +148,41 @@ export default {
       }
     },
     AddCategory(){
-      addCategoryApi(this.cataegoryData)
-      this.category_list.push(this.cataegoryData)
-      this.dialogVisible=false
+      console.log(this.cataegoryData)
+      this.$refs.form.validate(valid => {
+        if (valid) {
+          const newRow = { category: this.cataegoryData.category }
+          
+          addCategoryApi(this.cataegoryData).then((res)=>{
+            if("error" in res)
+            {
+              console.log(res)
+              this.$message.error(res["error"]);
+            }else{
+              this.category_list.push(newRow)
+              this.$nextTick(() => {
+              this.$refs.table.setCurrentRow(newRow)
+              })
+              this.dialogVisible = false
+              this.$message.success('添加成功')
+              this.$refs.form.resetFields()
+              }
+          })
+        }
+      })
+      // addCategoryApi(this.cataegoryData)
+      // this.category_list.push(this.cataegoryData)
+      // this.dialogVisible=false
+    },
+    handleEdit(row){
+      this.editData = row
+      this.dialogEditVisible = true
+    },
+    editCategoryData(){
+      console.log(this.editData)
+      editCategoryApi(this.editData.category,this.editData)
+      this.$message.success('修改成功')
+      this.dialogEditVisible = false
     }
   },
 };

@@ -132,12 +132,12 @@
           <span class="btn-inner--icon">
             <i class="ni ni-archive-2"></i>
           </span>
-          <span class="btn-inner--text">导出Word</span>
+          <span class="btn-inner--text">导出/预览</span>
         </argon-button>
-        <el-dialog v-model="exportDialogVisible" class="dialogLarge" title="导出word" append-to-body :destroy-on-close="true">
-          <p>序章</p>
+        <el-dialog v-model="exportDialogVisible" class="dialogLarge" title="导出/预览" append-to-body :destroy-on-close="true">
+          <p>IP描述</p>
           <div style="padding-bottom: 10px;">
-            <el-select v-model="ip_page_file_uuid" filterable placeholder="请选择序章">
+            <el-select v-model="ip_page_file_uuid" filterable placeholder="请选择ip描述">
             <el-option v-for="(item,index) in ip_page_list" :key="index" :label="item.name" :value="item.file_uuid">
               {{ item.name+"("+item.version+")" }}
             </el-option>
@@ -145,7 +145,7 @@
             <el-button :disabled="isIpPageExportDisabled" type="primary" style="margin-left: 10px;" @click="generate(true,true)" >预览</el-button>
             <el-button :disabled="isIpPageExportDisabled" type="primary" style="margin-left: 10px;" @click="generate(false,true)" >导出</el-button>
           </div>
-          <p>列表</p>
+          <p>寄存器列表</p>
           <div>
             <el-select v-model="file_uuid" filterable placeholder="请选择spec模版">
             <el-option v-for="(item,index) in template_file_list" :key="index" :label="item.name" :value="item.file_uuid">
@@ -240,6 +240,12 @@
                 <el-form-item label="Child Version" :label-width="formLabelWidth">
                   <el-input v-model="editData.child_version" autocomplete="off" />
                 </el-form-item>
+                <el-form-item label="Child Category" :label-width="formLabelWidth">
+                  <el-select v-model="editData.category" style="width: 100%">
+                  <!-- <el-option label="Interface" value="Interface" /> -->
+                  <el-option v-for="(item,index) in category_list" :key="index" :label=item.category :value=item.category></el-option>
+                </el-select>
+                </el-form-item>
                 <el-form-item label="Description" :label-width="formLabelWidth">
                   <el-input v-model="editData.description" autocomplete="off" />
                 </el-form-item>
@@ -301,6 +307,7 @@
 import ArgonButton from "@/components/ArgonButton.vue";
 import { mapState } from 'vuex';
 import { getIpListApi,deleteIp,getIpPageFileApi,perviewIpPageFileApi} from "@/http/api/ip"
+import { getCategoryApi } from "@/http/api/category"
 import { getRegGatherList } from "@/http/api/reggather"
 import { editIpVersion } from '@/http/api/ip';
 import { v4 as uuidv4 } from 'uuid';
@@ -428,6 +435,7 @@ export default {
     ...mapState('IP',['ip_lists']),
     ...mapState('template_file',['template_file_list']),
     ...mapState('user',['userlist']),
+    ...mapState('category',['category_list']),
     isDisabled() {
       return this.condition; // 根据条件动态返回禁用状态
     },
@@ -459,6 +467,9 @@ export default {
 
   created(){
     this.generateData()
+    getCategoryApi().then((res)=>{
+      this.$store.commit('category/getCategoryList',res)
+    })
   //   window.addEventListener('beforeunload', () => {
   //     sessionStorage.setItem('list', JSON.stringify(this.$store.state))
   //   })
@@ -793,12 +804,14 @@ export default {
             this.category_ip.splice(this.currentRowIndex,1,this.editData)
             this.dialogFormVisible=false
             this.ip_lists.splice(this.currentRowIndex,1,this.editData)
+            this.$message.success('修改成功')
           }
         }else{
           editIpVersion(this.editData.ip_uuid,this.editData)
           this.category_ip.splice(this.currentRowIndex,1,this.editData)
           this.dialogFormVisible=false
           this.ip_lists.splice(this.currentRowIndex,1,this.editData)
+          this.$message.success('修改成功')
         }
       }else{
         if(this.editData.child_version!=this.oldChildVersion){
@@ -814,12 +827,14 @@ export default {
             this.category_ip.splice(this.currentRowIndex,1,this.editData)
             this.dialogFormVisible=false
             this.ip_lists.splice(this.currentRowIndex,1,this.editData)
+            this.$message.success('修改成功')
           }
         }else{
           editIpVersion(this.editData.ip_uuid,this.editData)
           this.category_ip.splice(this.currentRowIndex,1,this.editData)
           this.dialogFormVisible=false
           this.ip_lists.splice(this.currentRowIndex,1,this.editData)
+          this.$message.success('修改成功')
         }
       }
     },

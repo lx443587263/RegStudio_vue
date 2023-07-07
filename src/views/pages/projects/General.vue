@@ -18,12 +18,12 @@
                         v-permission="['admin', 'edit', 'create',]" @click="insertEvent">Add</el-button>
                 </div>
                 <div v-show="tableData.length != 0" class="addbutton">
-                    <argon-button variant="gradient" style="padding: 10px;" @click="showIpPage=true"><el-icon><Document /></el-icon> IP page</argon-button>
+                    <argon-button variant="gradient" style="padding: 10px;" @click="showIpPage=true"><el-icon><Document /></el-icon> IP描述</argon-button>
                     <router-link :to="{ name: 'Charts' }" style="padding: 10px;">
-                        <argon-button variant="gradient"><i class="vxe-icon-chart-bar-x"></i> Reg Graph</argon-button>
+                        <argon-button variant="gradient"><i class="vxe-icon-chart-bar-x"></i> 寄存器位置图</argon-button>
                     </router-link>
                     <router-link :to="{ name: 'Timeline' }">
-                        <argon-button variant="gradient"><el-icon><Notebook /></el-icon> Modify Timeline</argon-button>
+                        <argon-button variant="gradient"><el-icon><Notebook /></el-icon> 修改日志</argon-button>
                     </router-link>
                 </div>
 
@@ -314,7 +314,7 @@ export default {
         const regColumnList = reactive([
             { prop: "start_bit", label: 'High',  width: 100 },
             { prop: "end_bit", label: 'Low',  width: 100 },
-            { prop: "RW", label: 'R/W',  width: 80 },
+            { prop: "RW", label: 'R/W',  width: 100 },
             { prop: "hw_RW", label: 'HW R/W',  width: 100 },
             { prop: "reset_value", label: 'Reset Value',  width: 130 },
             { prop: "field", label: 'Field',  overflow: true, width: 200 },

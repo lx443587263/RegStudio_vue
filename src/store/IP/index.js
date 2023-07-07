@@ -79,6 +79,9 @@ const IP={
             state.ip_info.tags = ip_info.tags;
             state.ip_info.see_permission = ip_info.see_permission;
             state.ip_info.child_version = ip_info.child_version;
+            if(!state.ip_info.see_permission){
+                state.ip_info.see_permission = "admin"
+            }
             //发送数据到后端
             await addIp(state.ip_info).then((res)=>{
                 // console.log("state.ip_info",state.ip_info)
@@ -99,9 +102,8 @@ const IP={
                         state.allCategoryListVuex.unshift(tempObj)
                     }else{
                         const findIpName = state.allCategoryListVuex[findCate].versionList.findIndex((item)=>item.ipName===state.ip_info.ip_name)
-                        console.log("findIpName",findIpName)
                         if(findIpName===-1){
-                            state.allCategoryListVuex[findCate].versionList.unshift({ipName:state.ip_info.ip_name})
+                            state.allCategoryListVuex[findCate].versionList.unshift({ipName:state.ip_info.ip_name,seePermission:state.ip_info.see_permission})
                         }
                     }
                 }

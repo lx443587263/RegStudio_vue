@@ -30,7 +30,7 @@ import 'element-plus/theme-chalk/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue';
 import echarts from "echarts";
 import directives from "@/directives"
-
+// import Astrict from './assets/js/astrict.js'
 
 
 
@@ -43,6 +43,7 @@ appInstance.use(ArgonDashboard);
 appInstance.use(VXETable);
 appInstance.use(ElementUI);
 appInstance.use(directives);
+// appInstance.use(Astrict);
 appInstance.echarts = echarts;
 
 for (let i in ElementPlusIconsVue) {

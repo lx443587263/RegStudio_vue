@@ -279,6 +279,7 @@ import Quill from "quill";
 import { v4 as uuidv4 } from 'uuid';
 import { mapMutations,mapState } from 'vuex';
 import { getCategoryApi } from "@/http/api/category"
+import { getCategoryListApi } from "@/http/api/ip"
 
 // import {userGet} from "@/http/api/user"
 
@@ -424,13 +425,14 @@ export default {
           }
           this.ip_info.see_permission = this.see_permission.join()
           this.addNewIP(this.ip_info);
-          this.$router.push({
-            path:'/pages/projects/general',
-            name: "General",
-            params:{
-              ip_uuid:this.ip_info.ip_uuid
-            },
+          getCategoryListApi(this.ip_info.category).then(async (res)=>{        
+            await this.$store.commit('IP/getCategoryIpList',res)
           })
+          this.$router.push({
+            path: "/ecommerce/Orders/order-list",
+            name: "Order List",
+          })
+          this.$message.success('添加成功')
         } else {
           // 表单验证不通过，进行相应的处理
           // ...

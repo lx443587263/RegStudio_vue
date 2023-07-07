@@ -24,4 +24,13 @@ export const deleteCategoryApi=(category)=>{
         method: "delete",
     });
 }
+
+//改
+export const editCategoryApi=(category,data)=>{
+    return serviceAxios({
+        url: "/ip/category/?category="+category,
+        method: "put",
+        data
+    });
+}
   
