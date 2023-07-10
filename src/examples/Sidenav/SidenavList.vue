@@ -953,7 +953,7 @@ export default {
   created(){
     if(this.allCategoryListVuex.length!=0){
       for (var i in this.allCategoryListVuex){
-        console.log(this.allCategoryListVuex[i].versionList)
+        // console.log(this.allCategoryListVuex[i].versionList)
         this.allCategoryListVuex[i].versionList = this.allCategoryListVuex[i].versionList.filter(item => item.seePermission.includes(localStorage.getItem('user')));
       }
     }

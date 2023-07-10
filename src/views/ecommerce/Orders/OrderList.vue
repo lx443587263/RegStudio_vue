@@ -222,7 +222,7 @@
                 </template>
               </el-table-column>
             </el-table>
-            <el-dialog v-model="dialogFormVisible" title="User Info">
+            <el-dialog v-model="dialogFormVisible" title="IP Info">
               <el-form :model="editData" >
                 <el-form-item label="IP Name" :label-width="formLabelWidth">
                   <el-input v-model="editData.ip_name" autocomplete="off" />
@@ -321,7 +321,7 @@ import {getTemplateFileApi} from "@/http/api/template_file";
 import { ElMessage } from 'element-plus';
 import { renderAsync } from "docx-preview";
 import ExcelJS from "exceljs";
-
+import { getCategoryListApi } from "../../../http/api/ip";
 
 
 export default {
@@ -776,6 +776,40 @@ export default {
       }
     },
 
+
+        //获取种类列表
+    getCategoryList(list){
+      if(list){
+        let tempAllCategoryList = []
+        let allCategoryList_temp = []
+        for(var item in list){
+          if(list[item].category){
+            let ipCategory = {}
+            ipCategory.category=list[item].category
+            ipCategory.versionList = []
+            let tempVersionList = []
+            getCategoryListApi(list[item].category).then((res)=>{
+              for(var i in res){
+                let temp = {}
+                temp.ipName = res[i].ip_name
+                temp.seePermission = res[i].see_permission
+                const findIpName = tempVersionList.findIndex(i=>i.ipName === temp.ipName)
+                if(findIpName == -1){
+                  tempVersionList.push(temp)
+                }
+              }
+              ipCategory.versionList = tempVersionList;
+            })
+
+            tempAllCategoryList.push(ipCategory)
+          }
+        }
+        allCategoryList_temp = tempAllCategoryList.filter((item, index) => tempAllCategoryList.findIndex(i => i.category === item.category) === index);
+        // allCategoryList_temp = JSON.parse(JSON.stringify(tempAllCategoryList.filter((item, index) => tempAllCategoryList.findIndex(i => i.category === item.category) === index)))
+        // localStorage.setItem('allCategoryListVuex',JSON.stringify(allCategoryList_temp))
+        this.$store.commit('IP/allCategoryList',allCategoryList_temp)
+      }
+    },
     
     //修改ip
     handleEdit(){
@@ -837,6 +871,18 @@ export default {
           this.$message.success('修改成功')
         }
       }
+
+      if(this.editData.category!=this.oldCategory){
+        this.getCategoryList(this.ip_lists)
+      }
+      // const index = this.allCategoryListVuex.findIndex((item)=>item.category===this.editData.category)
+      // if(index===-1){
+      //   const tempObj = {category:this.editData.category,versionList:[{ipName:this.editData.ip_name,seePemission:this.editData.see_permission}]}
+      //   this.allCategoryListVuex.push(tempObj)
+      // }else{
+      //   this.allCategoryListVuex[index].versionList.push({ipName:this.editData.ip_name,seePemission:this.editData.see_permission})
+      // }
+      // console.log(this.allCategoryListVuex)
     },
 
     handleClose(tag) {
