@@ -777,7 +777,7 @@ export default {
     },
 
 
-        //获取种类列表
+    //获取种类列表
     getCategoryList(list){
       if(list){
         let tempAllCategoryList = []
