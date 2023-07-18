@@ -188,11 +188,7 @@ export default {
       this.fileList.push(fileData); // 将文件数据添加到已上传文件列表中
       this.template_file_list.push(fileData); // 将文件数据添加到表格数据中
     },
-    // handleDownload(file) {
-    //   console.log("file.url",file.url)
-    //   // 处理文件下载逻辑
-    //   // window.location.href = file.url; // 使用文件URL下载文件
-    // },
+
     handleRemove(file) {
       // 处理文件删除逻辑
       const index = this.template_file_list.indexOf(file);
@@ -207,36 +203,9 @@ export default {
         saveAs(res, row.name);
       })
     }
-    // }
+
   },
 
-  // mounted() {
-  //   if (document.getElementById("products-list")) {
-  //     const dataTableSearch = new DataTable("#products-list", {
-  //       searchable: true,
-  //       fixedHeight: false,
-  //       perPage: 7,
-  //     });
-
-  //     document.querySelectorAll(".export").forEach(function (el) {
-  //       el.addEventListener("click", function () {
-  //         var type = el.dataset.type;
-
-  //         var data = {
-  //           type: type,
-  //           filename: "soft-ui-" + type,
-  //         };
-
-  //         if (type === "csv") {
-  //           data.columnDelimiter = "|";
-  //         }
-
-  //         dataTableSearch.export(data);
-  //       });
-  //     });
-  //   }
-  //   setTooltip(this.$store.state.bootstrap);
-  // },
 };
 </script>
 

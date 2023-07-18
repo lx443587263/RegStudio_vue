@@ -374,40 +374,6 @@ export default {
       })
     }
 
-    // getCategoryList(list){
-    //   if(list){
-    //     let tempAllCategoryList = []
-    //     let allCategoryList_temp = []
-    //     for(var item in list){
-    //       console.log(item)
-    //       if(list[item].category){
-    //         let ipCategory = {}
-    //         ipCategory.category=list[item].category
-    //         ipCategory.versionList = []
-    //         let tempVersionList = []
-    //         getCategoryList(list[item].category).then((res)=>{
-    //           for(var i in res){
-    //             let temp = {}
-    //             temp.label = res[i].version
-    //             temp.route = ipCategory.category
-    //             // ipCategory.versionList.push(temp)
-    //             tempVersionList.push(temp)
-    //             // ipCategory.versionList = tempVersionList
-    //             console.log("tempVersionList1",tempVersionList)
-    //           }
-    //           console.log("tempVersionList2",tempVersionList)
-    //           ipCategory.versionList = tempVersionList.filter((item, index) => tempVersionList.findIndex(i => i.label === item.label) === index);
-    //           // ipCategory.versionList=tempVersionList
-    //         })
-    //         tempAllCategoryList.push(ipCategory)
-    //       }
-    //     }
-    //     // this.allCategoryList = tempAllCategoryList.filter((item, index) => tempAllCategoryList.findIndex(i => i.category === item.category) === index);
-    //     allCategoryList_temp = tempAllCategoryList.filter((item, index) => tempAllCategoryList.findIndex(i => i.category === item.category) === index);
-    //     // this.$store.commit('IP/allCategoryList',this.allCategoryList)
-    //     this.$store.commit('IP/allCategoryList',allCategoryList_temp)
-    //   }
-    // },
   }
 };
 </script>

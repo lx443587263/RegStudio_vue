@@ -1,10 +1,11 @@
 <template>
   <div class="container-fluid">
-    <div class="col-12">
       <div class="card">
         <!-- Card header -->
-        <div class="card-header">
-          <h5 class="mb-0">新建寄存器集合</h5>
+        <div class="card-header" style="height: 80px;">
+          <div class="header" style="padding:10px">
+            <h5 class="mb-0">新建寄存器集合</h5>
+          </div>
           <!-- <p class="mb-0 text-sm">
           A lightweight, extendable, dependency-free javascript HTML table plugin.
         </p> -->
@@ -13,7 +14,6 @@
           <div id="chart-container"></div>
         </div>
       </div>
-    </div>
   </div>
 </template>
 
@@ -189,7 +189,7 @@ export default {
 <style scoped>
 * {
   margin: 0;
-  padding: 0;
+  padding: 10px;
 }
 
 #chart-container {

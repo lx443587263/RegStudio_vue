@@ -43,7 +43,7 @@
                         :checkbox-config="{checkField: 'checked'}"
                         :edit-rules="validRules"
                         :expand-config="{lazy: true, loadMethod: loadContentMethod}"
-                        show-overflow max-height="675px" style="margin-bottom: 20px;" @menu-click="contextMenuClickEvent" @cell-click="getTableCategory">
+                        show-overflow max-height="700px" style="margin-bottom: 20px;" @menu-click="contextMenuClickEvent" @cell-click="getTableCategory">
                         <!-- 子表格  -->
                         <vxe-column type="checkbox" width="50px"></vxe-column>
                         <vxe-column type="expand" width="50px">
@@ -55,6 +55,7 @@
                                     ref="SinglexTable" 
                                     border = "inner" 
                                     keep-source :data="gatherRow.singleReg"
+                                    max-height="400px"
                                     :edit-config="{ trigger: 'manual', mode: 'row' }" 
                                     :edit-rules="validRules"
                                     :expand-config="{lazy: true, loadMethod: loadContentMethod}"
@@ -63,7 +64,7 @@
                                         <template #content="{ row: singleRow, rowIndex: singleIndex}">
                                             <el-button v-show="singleRow.values.length === 0" v-permission="['admin', 'edit', 'create']" @click="insertValueEvent(singleRow)">Add</el-button>
                                             <vxe-table 
-                                                ref="ValuexTable" border = "inner" keep-source :data="singleRow.values" style="margin-left: 450px;"
+                                                ref="ValuexTable" border = "inner" keep-source max-height="300px" :data="singleRow.values" style="margin-left: 450px;"
                                                 :edit-config="{ trigger: 'manual', mode: 'row' }" row-id="id" show-overflow @cell-click="getTableCategory">
                                                 <vxe-column 
                                                     v-for="(colVal, idxVal) in regValue" :key="idxVal" :field="colVal.prop" :width="colVal.width"

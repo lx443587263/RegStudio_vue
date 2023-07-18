@@ -3,13 +3,6 @@
     <div class="row">
       <div class="mx-auto col-lg-9 col-12">
         <timeline-list title="Modify Timeline with dashed line">
-          <!-- <timeline-item
-            :icon="{ component: 'ni ni-bell-55', color: 'success' }"
-            title="$2400 Design changes"
-            date-time="22 DEC 7:20 PM"
-            description="People care about how you see the world, how you think, what motivates you, what you’re struggling with or afraid of."
-            :badges="['design']"
-          /> -->
           <TimelineItem
             v-for="(item,idx) in modify_list" :key="idx" 
             :icon="{ component: 'ni ni-check-bold', color: item.color }"
@@ -18,61 +11,6 @@
             :description=item.des
             :badges="[item.modify_model]"
           />
-          <!-- <TimelineItem
-            :icon="{ component: 'ni ni-html5', color: 'danger' }"
-            title="New order #1832412"
-            :date-time=item.data
-            :description=item.des
-            :badges="['order', '#1832412']"
-          />
-          <TimelineItem
-            :icon="{ component: 'ni ni-cart', color: 'info' }"
-            title="Server payments for April"
-            date-time="21 DEC 9:34 PM"
-            description="People care about how you see the world, how you think, what motivates you, what you’re struggling with or afraid of."
-            :badges="['server', 'payments']"
-          /> -->
-          <!-- <TimelineItem
-            :icon="{ component: 'ni ni-credit-card', color: 'warning' }"
-            title="New card added for order #4395133"
-            date-time="20 DEC 2:20 AM"
-            description="People care about how you see the world, how you think, what motivates you, what you’re struggling with or afraid of."
-            :badges="['Card', '#4395133', 'Priority']"
-          />
-          <TimelineItem
-            :icon="{ component: 'ni ni-key-25', color: 'primary' }"
-            title="Unlock packages for development"
-            date-time="18 DEC 4:54 AM"
-            description="People care about how you see the world, how you think, what motivates you, what you’re struggling with or afraid of."
-            :badges="['Development']"
-          />
-          <TimelineItem
-            :icon="{ component: 'ni ni-archive-2', color: 'success' }"
-            title="New message unread"
-            date-time="16 DEC"
-            description="People care about how you see the world, how you think, what motivates you, what you’re struggling with or afraid of."
-            :badges="['Message']"
-          />
-          <TimelineItem
-            :icon="{ component: 'ni ni-check-bold', color: 'info' }"
-            title="Notifications unread"
-            date-time="15 DEC"
-            description="People care about how you see the world, how you think, what motivates you, what you’re struggling with or afraid of."
-          />
-          <TimelineItem
-            :icon="{ component: 'ni ni-box-2', color: 'warning' }"
-            title="New request"
-            date-time="14 DEC"
-            description="People care about how you see the world, how you think, what motivates you, what you’re struggling with or afraid of."
-            :badges="['Request', 'Priority']"
-          />
-          <TimelineItem
-            :icon="{ component: 'ni ni-controller', color: 'dark' }"
-            title="Controller issues"
-            date-time="13 DEC"
-            description="People care about how you see the world, how you think, what motivates you, what you’re struggling with or afraid of."
-            :badges="['Controller']"
-          /> -->
         </timeline-list>
       </div>
     </div>

@@ -99,9 +99,17 @@
         <span class="btn-inner--icon">
             <i class="ni ni-archive-2"></i>
           </span>
-          <span class="btn-inner--text" @click="exportCDefine">导出CDefine</span>
+          <span class="btn-inner--text" @click="exportDialogCDefineVisible=true">导出CDefine</span>
         </argon-button>
-
+        <el-dialog v-model="exportDialogCDefineVisible" class="dialogLarge" title="导出" append-to-body :destroy-on-close="true">
+          <el-select v-model="CDefineCategory" filterable placeholder="请选择编码风格">
+            <el-option v-for="(item,index) in CDefineList" :key="index" :label="item.category" :value="item.value">
+              {{ item.category }}
+            </el-option>
+          </el-select>
+          <el-button :disabled="isIpPageCDefineDisabled" type="primary" style="margin-left: 10px;padding: 10px;" @click="exportCDefine" >导出</el-button>
+          <!-- <div id="bodyContainer"></div> -->
+        </el-dialog>
         <argon-button
           class="btn-icon ms-2 export"
           size
@@ -350,6 +358,11 @@ export default {
         { prop: "child_version", label: 'Child Version',width:'120px' },
         { prop: "tags", label: 'Tags' },
       ],
+      CDefineList:[
+        {category:"固件",value:"firmware"},
+        {category:"算法",value:"algorithm"},
+      ],
+      CDefineCategory:"",
       dynamicTags: [],
       see_permission: [],
       inputVisible: false,
@@ -359,6 +372,7 @@ export default {
       dialogPermissionVisible: false,
       exportDialogVisible:false,
       exportDialogExcelVisible:false,
+      exportDialogCDefineVisible:false,
       fileList: [],
       formLabelWidth :'140px',
       editData:{},
@@ -375,6 +389,7 @@ export default {
       condition:true,
       exportCondition:true,
       exportConditionIpPage:true,
+      exportConditionCDefinePage:true,
       isExport:false,
       docxOptions: {
         className: "kaimo-docx-666", // string：默认和文档样式类的类名/前缀
@@ -444,7 +459,11 @@ export default {
     },
     isIpPageExportDisabled(){
       return this.exportConditionIpPage
+    },
+    isIpPageCDefineDisabled(){
+      return this.exportConditionCDefinePage
     }
+    
   },
 
   watch:{
@@ -462,7 +481,12 @@ export default {
       if(newValue){
         this.exportConditionIpPage=false
       }
-    }
+    },
+    'CDefineCategory'(newValue){
+      if(newValue){
+        this.exportConditionCDefinePage=false
+      }
+    },
   },
 
   created(){
@@ -1533,22 +1557,25 @@ typedef struct {\r`
                 let temp_conten_temp_mask
                 let temp_conten_temp_pos
                 if(temp_list[j].singleReg[k].field.indexOf("[")!=-1){
-                  temp_conten_temp_mask = "#define "+(temp_list[j].singleReg[k].field.split('[')[0]).toUpperCase()+"_MASK"
+                  temp_conten_temp_mask = "#define "+(temp_list[j].singleReg[k].field.split('[')[0]).toUpperCase().replace(/\s*/g,"")+"_MASK"
                   // temp_content= temp_content+"#define "+(temp_list[j].singleReg[k].field.split('[')[0]).toUpperCase()+"_MASK"+" ".repeat(60-temp_conten_temp_mask.length)+this.reg_hex[num]+"\r\r"
-                  temp_conten_temp_pos = "#define "+(temp_list[j].singleReg[k].field.split('[')[0]).toUpperCase()+"_POS"
+                  temp_conten_temp_pos = "#define "+(temp_list[j].singleReg[k].field.split('[')[0]).toUpperCase().replace(/\s*/g,"")+"_POS"
                   // temp_content = temp_content+"/*!< "+temp_list[j].offset+" "+temp_list[j].reg_gather_name+" \r*"+temp_list[j].singleReg[k].description+"\r*/\r#define "+(temp_list[j].singleReg[k].field.split('[')[0]).toUpperCase()+"_POS"+" ".repeat(60-temp_conten_temp_pos.length)+num.toString()+"\r"
                 }else if(temp_list[j].singleReg[k].field.indexOf("0~")!=-1){
-                  temp_conten_temp_mask = "#define "+(temp_list[j].singleReg[k].field.split('0~')[0]).toUpperCase()+"_MASK"
-                  temp_conten_temp_pos = "#define "+(temp_list[j].singleReg[k].field.split('0~')[0]).toUpperCase()+"_POS"
+                  temp_conten_temp_mask = "#define "+(temp_list[j].singleReg[k].field.split('0~')[0]).toUpperCase().replace(/\s*/g,"")+"_MASK"
+                  temp_conten_temp_pos = "#define "+(temp_list[j].singleReg[k].field.split('0~')[0]).toUpperCase().replace(/\s*/g,"")+"_POS"
                 }else{
-                  temp_conten_temp_mask = "#define "+temp_list[j].singleReg[k].field.toUpperCase()+"_MASK"
-                  temp_conten_temp_pos = "#define "+temp_list[j].singleReg[k].field.toUpperCase()+"_POS"
+                  temp_conten_temp_mask = "#define "+temp_list[j].singleReg[k].field.toUpperCase().replace(/\s*/g,"")+"_MASK"
+                  temp_conten_temp_pos = "#define "+temp_list[j].singleReg[k].field.toUpperCase().replace(/\s*/g,"")+"_POS"
                 }
                 // temp_content= temp_content+"#define "+temp_list[j].singleReg[k].field.toUpperCase()+"_MASK"+" ".repeat(60-temp_conten_temp_mask.length)+this.reg_hex[num]+"\r\r"
-                temp_content= temp_content+"/*!< "+temp_list[j].offset+" "+temp_list[j].reg_gather_name+" \r*"+temp_list[j].singleReg[k].description+"\r*/\r"+temp_conten_temp_mask+" ".repeat(60-temp_conten_temp_mask.length)+this.reg_hex[num]+"\r"
-                temp_content = temp_content+temp_conten_temp_pos+" ".repeat(60-temp_conten_temp_pos.length)+num.toString()+"\r\r"
-                
-
+                if(this.CDefineCategory=="firmware"){
+                  temp_content= temp_content+"/*!< "+temp_list[j].offset+" "+temp_list[j].reg_gather_name+" \r*"+temp_list[j].singleReg[k].description+"\r*/\r"+temp_conten_temp_mask+" ".repeat(60-temp_conten_temp_mask.length)+this.reg_hex[num]+"\r"
+                  temp_content = temp_content+temp_conten_temp_pos+" ".repeat(60-temp_conten_temp_pos.length)+num.toString()+"\r\r"
+                }else{
+                  temp_content= temp_content+"/*!< "+temp_list[j].offset+" "+temp_list[j].reg_gather_name+" \r*"+temp_list[j].singleReg[k].description+"\r*/\r"+temp_conten_temp_mask+" ".repeat(60-temp_conten_temp_mask.length)+(Math.pow(2, (parseInt(temp_list[j].singleReg[k].start_bit)-parseInt(temp_list[j].singleReg[k].end_bit))+1)-1)+"\r"
+                  temp_content = temp_content+temp_conten_temp_pos+" ".repeat(60-temp_conten_temp_pos.length)+temp_list[j].singleReg[k].end_bit+"\r\r"
+                }
               }
             }
             temp_content = temp_content+"\r"
