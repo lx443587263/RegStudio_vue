@@ -45,7 +45,7 @@
             </el-form-item>
 
             <el-form-item label="Position Select" :label-width="formLabelWidth">
-              <el-select v-model="positionTemp" placeholder="Please select a zone">
+              <el-select v-model="positionTemp" multiple placeholder="Please select a zone">
                 <el-option value="admin">管理员</el-option>
                 <el-option value="create">新增</el-option>
                 <el-option value="edit">编辑</el-option>
@@ -143,14 +143,14 @@ export default {
     }
     //修改用户
     function handleEdit() {
-      if(positionTemp.value){
+      if(positionTemp.value.length > 0){
         positionList.value.push(positionTemp.value)
       }
       editData.value.position = positionList.value.join()
       userEdit(editData.value.user_uuid,editData.value)
       users.value.splice(currentRowIndex.value,1,editData.value)
       dialogFormVisible.value = false
-      
+      positionTemp.value = []
     }
 
     function handleDelete(row,index) {

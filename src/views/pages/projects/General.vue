@@ -1019,16 +1019,17 @@ export default {
             for (var h = 0; h < singleList.length; ++h) {
                 var tempRsetValue;
                 if ((singleList[h]["reset_value"]).includes("b")) {
-                    tempRsetValue = parseInt((singleList[h]["reset_value"]).substr(1), 2)
+                    // console.log(parseInt("1'b00100".substr(("1'b00100").indexOf("b")), 2));
+                    tempRsetValue = parseInt((singleList[h]["reset_value"]).substr((singleList[h]["reset_value"]).indexOf("b")+1), 2)
                 }
                 else if ((singleList[h]["reset_value"]).includes("h")) {
-                    tempRsetValue = parseInt((singleList[h]["reset_value"]).substr(1), 16)
+                    tempRsetValue = parseInt((singleList[h]["reset_value"]).substr((singleList[h]["reset_value"]).indexOf("h")+1), 16)
                 }
                 else if ((singleList[h]["reset_value"]).includes("-")) {
                     tempRsetValue = parseInt((singleList[h]["reset_value"]), 10) >>> 0
                 }
-                else {
-                    tempRsetValue = parseInt(singleList[h]["reset_value"])
+                else if((singleList[h]["reset_value"]).includes("d")){
+                    tempRsetValue = parseInt(singleList[h]["reset_value"].substr((singleList[h]["reset_value"]).indexOf("d")+1))
                 }
                 templist.push(tempRsetValue << parseInt(singleList[h]["end_bit"]) >>> 0)
             }

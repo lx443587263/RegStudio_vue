@@ -123,9 +123,23 @@
           <span class="btn-inner--text">导出Excel</span>
         </argon-button>
         <el-dialog v-model="exportDialogExcelVisible" class="dialogLarge" title="导出" append-to-body :destroy-on-close="true">
+          <el-checkbox
+            v-model="checkAll"
+            :indeterminate="isIndeterminate"
+            @change="handleCheckAllChange"
+            >Check all</el-checkbox
+          >
+          <el-checkbox-group
+            v-model="checkedCities"
+            @change="handleCheckedCitiesChange"
+          >
+            <el-checkbox v-for="city in cities" :key="city" :label="city">
+              {{ city }}
+            </el-checkbox>
+        </el-checkbox-group>
           <el-input v-model="start_addr" filterable placeholder="请输入起始地址" style="width: 200px;">
           </el-input>
-          <el-button type="primary" style="margin-left: 10px;padding: 10px;" @click="downloadReg" >导出</el-button>
+          <el-button :disabled="isIpPageExcelDefineDisabled" type="primary" style="margin-left: 10px;padding: 10px;" @click="downloadReg" >导出</el-button>
           <!-- <div id="bodyContainer"></div> -->
         </el-dialog>
 
@@ -390,6 +404,7 @@ export default {
       exportCondition:true,
       exportConditionIpPage:true,
       exportConditionCDefinePage:true,
+      exportConditionExcelDefinePage:true,
       isExport:false,
       docxOptions: {
         className: "kaimo-docx-666", // string：默认和文档样式类的类名/前缀
@@ -407,6 +422,10 @@ export default {
         debug: false, // boolean：启用额外的日志记录
       },
       PerviewDisable:false,
+      checkAll:false,
+      isIndeterminate:true,
+      checkedCities:["Reg Name", "Sub Reg Name", "Offset Addr","Bit Width", "Default Value", "Soft R/W","HW R/W","Addr", "reg/ram", "Retention", "Describe"],
+      cities:["Reg Name", "Sub Reg Name", "Offset Addr","Bit Width", "Default Value", "Soft R/W","HW R/W","Addr", "reg/ram", "Retention", "Describe","Mask"],
       reg_hex: {
         1: "0x01",
         2: "0x03",
@@ -462,7 +481,10 @@ export default {
     },
     isIpPageCDefineDisabled(){
       return this.exportConditionCDefinePage
-    }
+    },
+    isIpPageExcelDefineDisabled(){
+      return this.exportConditionExcelDefinePage
+    },
     
   },
 
@@ -485,6 +507,11 @@ export default {
     'CDefineCategory'(newValue){
       if(newValue){
         this.exportConditionCDefinePage=false
+      }
+    },
+    'start_addr'(newValue){
+      if(newValue){
+        this.exportConditionExcelDefinePage=false
       }
     },
   },
@@ -919,6 +946,7 @@ export default {
         this.$refs.saveTagInput.$refs.input.focus();
       });
     },
+
 
     handleInputConfirm() {
       let inputValue = this.inputValue;
@@ -1431,43 +1459,71 @@ export default {
 
     },
 
+    calculateOffset(singleList){
+      let templist = []   //存储reset值
+      for (var h = 0; h < singleList.length; ++h) {
+          var tempRsetValue = "1".repeat((singleList[h]["start_bit"]-singleList[h]["end_bit"])+1)
+          templist.push(parseInt(tempRsetValue,2) << parseInt(singleList[h]["end_bit"]))
+      }
+
+      if (templist.length != 0) {
+          const result = templist.reduce((acc, binaryValue) => {
+              return acc | binaryValue; // 进行位与运算
+          });
+          return result.toString(2).padStart(32, '0')
+      } else {
+          return "0"
+      }
+  },
+
+
+    handleCheckAllChange (val){
+      this.checkedCities = val ? this.cities : []
+      this.isIndeterminate = false
+    },
+    handleCheckedCitiesChange (value) {
+      const checkedCount = value.length
+      this.checkAll = checkedCount === this.cities.length
+      this.isIndeterminate = checkedCount > 0 && checkedCount < this.cities.length
+    },
+
     downloadReg() {
       if (this.selList.length != 0) {
         let workbook = new ExcelJS.Workbook()
         for (var i in this.selList) {
           const temp_list = this.reg_gather_list.filter(item => item.ip_uuid === this.selList[i].ip_uuid)
-          const header = ["RegName", "Sub Reg Name", "Bit Width", "Description", "Addr", "reg/ram", "Retention"]
-          const value = { RegName: "reg_gather_name", 'Sub Reg Name': "field", 'Bit Width': "bit_width", Description: "description", Addr: "address", 'reg/ram': "reg_ram", Retention: "retention" }
+          // const header = ["Reg Name", "Sub Reg Name", "Offset Addr","Bit Width", "Default Value", "Soft R/W","HW R/W","Addr", "reg/ram", "Retention", "Describe","Mask"]
+          const header  = this.checkedCities
+          const value = { "Reg Name": "reg_gather_name", 'Sub Reg Name': "field", 'Bit Width': "bit_width","Default Value":"def_value", Describe: "description", Addr: "address", 'reg/ram': "reg_ram", Retention: "retention",Mask:"mask" }
           const columns = header.map((item) => {
             return {
               header: item,
               key: value[item],
-              width: 30
+              width:30
             }
           })
           const dataList = []
           temp_list.map((item) => {
-            let gather_res = {}
-            gather_res.reg_gather_name = item.reg_gather_name
-            gather_res.description = item.description
-            gather_res.address = this.start_addr+item.offset.split("x")[1]
-            gather_res.reg_ram = item.reg_ram
-            gather_res.retention = item.reg_ram
-            gather_res.field = " "
-            gather_res.bit_width = " "
-            dataList.push(gather_res)
-            if (item.singleReg.length > 0) {
-              item.singleReg.map((value) => {
-                let single_reg = {}
-                single_reg.reg_gather_name = " "
-                single_reg.description = value.description
-                single_reg.address = " "
-                single_reg.reg_ram = " "
-                single_reg.retention = " "
-                single_reg.field = value.field
-                single_reg.bit_width = `${value.start_bit}:${value.end_bit}`
-                dataList.push(single_reg)
-              })
+            if(item.offset.indexOf("~")==-1){
+              let gather_res = {}
+              gather_res.reg_gather_name = item.reg_gather_name
+              gather_res.description = item.description
+              gather_res.address = this.start_addr+item.offset.replace(/^0x/, '')
+              gather_res.reg_ram = item.reg_ram
+              gather_res.retention = item.reg_ram
+              gather_res.def_value  = item.reset.replace(/^0x/, '')
+              gather_res.mask = this.calculateOffset(item.singleReg)
+              dataList.push(gather_res)
+              if (item.singleReg.length > 0) {
+                item.singleReg.map((value) => {
+                  let single_reg = {}
+                  single_reg.description = value.description
+                  single_reg.field = value.field
+                  single_reg.bit_width = `${value.start_bit}:${value.end_bit}`
+                  single_reg.def_value = value.reset_value
+                  dataList.push(single_reg)
+                })
+              }
             }
           })
           this.exportFile(workbook, header, columns, dataList, this.selList[i].ip_name, this.selList[i].ip_name + "(" + this.selList[i].version + ")")
@@ -1487,6 +1543,19 @@ export default {
           type: 'error',
         })
       }
+    },
+
+            //格式化offset
+    formatHex(hexString){
+      // 移除字符串开头的 "0x" 前缀（如果有的话）
+      const cleanedString = hexString.replace(/^0x/, '');
+      // 获取需要填充的零的数量
+      // const paddingLength = 4 - cleanedString.length;
+      // 使用 "0" 进行左侧填充，使字符串达到固定长度
+      const paddedString = cleanedString.padStart(4, '0');
+      // 添加 "0x" 前缀
+      const formattedString = `0x${paddedString}`;
+      return formattedString;
     },
 
     exportCDefine(){
@@ -1524,11 +1593,17 @@ export default {
 typedef struct {\r`
           let temp_content = ""
           let count = 0
-          for(var j in temp_list){
+          for(var j = 0;j<temp_list.length; j++){
             if(temp_list[j].offset.indexOf("~")!=-1){
               let tempOff =parseInt(temp_list[j].offset.split("~")[1],16)-parseInt(temp_list[j].offset.split("~")[0],16)
-              let contentTemp = " ".repeat(4)+"uint32_t RSVD"+(count.toString()!='0'?count:"")+"["+((tempOff/4)+1).toString()+"];"
-              content = content+contentTemp+" ".repeat(60-contentTemp.length) +`/*${temp_list[j].offset},${temp_list[j].description+" ".repeat(44-(temp_list[j].description?(temp_list[j].description.length):'null'.length))}*/\r`
+              let contentTemp = " ".repeat(4)+"uint32_t RSVD"+(count.toString()!='0'?count:"")+"["+((tempOff+1)/4).toString()+"];"
+              content = content+contentTemp+" ".repeat(60-contentTemp.length) +`/*${temp_list[j].offset},${temp_list[j].description+" ".repeat(51-(temp_list[j].description?(temp_list[j].description.length):'null'.length))}*/\r`
+              count = count+1
+            }
+            if((j+1) < temp_list.length && parseInt(temp_list[j+1].offset,16)-parseInt(temp_list[j].offset,16)!=4){
+              let tempOff =parseInt(temp_list[j+1].offset,16)-parseInt(temp_list[j].offset,16)
+              let contentTemp = " ".repeat(10)+"uint32_t RSVD"+(count.toString()!='0'?count:"")+"["+parseInt((tempOff+1)/4).toString()+"];"
+              content = content+contentTemp+" ".repeat(60-contentTemp.length) +`/*${temp_list[j].offset},${temp_list[j].description+" ".repeat(51-(temp_list[j].description?(temp_list[j].description.length):'null'.length))}*/\r`
               count = count+1
             }else{
               // (temp_list[j].singelReg).map(item => item.RW);
@@ -1538,43 +1613,55 @@ typedef struct {\r`
                 tempPer = "__IOM"
               }
               if(["R","r"].some(str => RWList.includes(str))){
-                tempPer = "__IM"
+                tempPer = "__IM "
               }
               if(["W","w"].some(str => RWList.includes(str))){
-                tempPer = "__OM"
+                tempPer = "__OM "
               }
               let contentTemp
               if(tempPer){
-                contentTemp = `    ${tempPer} uint32_t ${temp_list[j].reg_gather_name.toUpperCase()};`
+                contentTemp = `    ${tempPer} uint32_t ${temp_list[j].reg_gather_name.toUpperCase().replace(/\s*/g,"")};`
               }else{
-                contentTemp = `    uint32_t ${temp_list[j].reg_gather_name.toUpperCase()};`
+                contentTemp = " ".repeat(10)+`uint32_t ${temp_list[j].reg_gather_name.toUpperCase().replace(/\s*/g,"")};`
               }
               content = content+contentTemp+" ".repeat(60-contentTemp.length) +`/*${temp_list[j].offset},${temp_list[j].description+" ".repeat(51-(temp_list[j].description?(temp_list[j].description.length):'null'.length))}*/\r`
             }
             if(temp_list[j].singleReg.length>0){
               for(var k in temp_list[j].singleReg){
-                let num = parseInt(temp_list[j].singleReg[k].start_bit)-parseInt(temp_list[j].singleReg[k].end_bit)+1
+                let num = parseInt(temp_list[j].singleReg[k].start_bit)
+                let high_num = parseInt(temp_list[j].singleReg[k].end_bit)
                 let temp_conten_temp_mask
                 let temp_conten_temp_pos
+                let temp_conten_temp_h_pos
+                let temp_conten_temp_l_pos
                 if(temp_list[j].singleReg[k].field.indexOf("[")!=-1){
-                  temp_conten_temp_mask = "#define "+(temp_list[j].singleReg[k].field.split('[')[0]).toUpperCase().replace(/\s*/g,"")+"_MASK"
+                  temp_conten_temp_mask = "#define "+(temp_list[j].singleReg[k].field.split('[')[0]).toUpperCase().replace(/\s*/g,"")+"_Msk"
                   // temp_content= temp_content+"#define "+(temp_list[j].singleReg[k].field.split('[')[0]).toUpperCase()+"_MASK"+" ".repeat(60-temp_conten_temp_mask.length)+this.reg_hex[num]+"\r\r"
-                  temp_conten_temp_pos = "#define "+(temp_list[j].singleReg[k].field.split('[')[0]).toUpperCase().replace(/\s*/g,"")+"_POS"
+                  temp_conten_temp_pos = "#define "+(temp_list[j].singleReg[k].field.split('[')[0]).toUpperCase().replace(/\s*/g,"")+"_Pos"
                   // temp_content = temp_content+"/*!< "+temp_list[j].offset+" "+temp_list[j].reg_gather_name+" \r*"+temp_list[j].singleReg[k].description+"\r*/\r#define "+(temp_list[j].singleReg[k].field.split('[')[0]).toUpperCase()+"_POS"+" ".repeat(60-temp_conten_temp_pos.length)+num.toString()+"\r"
+                  temp_conten_temp_h_pos = "#define "+(temp_list[j].singleReg[k].field.split('[')[0]).toUpperCase().replace(/\s*/g,"")+"_PosH"
+                  temp_conten_temp_l_pos = "#define "+(temp_list[j].singleReg[k].field.split('[')[0]).toUpperCase().replace(/\s*/g,"")+"_PosL"
                 }else if(temp_list[j].singleReg[k].field.indexOf("0~")!=-1){
-                  temp_conten_temp_mask = "#define "+(temp_list[j].singleReg[k].field.split('0~')[0]).toUpperCase().replace(/\s*/g,"")+"_MASK"
-                  temp_conten_temp_pos = "#define "+(temp_list[j].singleReg[k].field.split('0~')[0]).toUpperCase().replace(/\s*/g,"")+"_POS"
+                  temp_conten_temp_mask = "#define "+(temp_list[j].singleReg[k].field.split('0~')[0]).toUpperCase().replace(/\s*/g,"")+"_Msk"
+                  temp_conten_temp_pos = "#define "+(temp_list[j].singleReg[k].field.split('0~')[0]).toUpperCase().replace(/\s*/g,"")+"_Pos"
+                  temp_conten_temp_h_pos = "#define "+(temp_list[j].singleReg[k].field.split('0~')[0]).toUpperCase().replace(/\s*/g,"")+"_PosH"
+                  temp_conten_temp_l_pos = "#define "+(temp_list[j].singleReg[k].field.split('0~')[0]).toUpperCase().replace(/\s*/g,"")+"_PosL"
                 }else{
-                  temp_conten_temp_mask = "#define "+temp_list[j].singleReg[k].field.toUpperCase().replace(/\s*/g,"")+"_MASK"
-                  temp_conten_temp_pos = "#define "+temp_list[j].singleReg[k].field.toUpperCase().replace(/\s*/g,"")+"_POS"
+                  temp_conten_temp_mask = "#define "+temp_list[j].singleReg[k].field.toUpperCase().replace(/\s*/g,"")+"_Msk"
+                  temp_conten_temp_pos = "#define "+temp_list[j].singleReg[k].field.toUpperCase().replace(/\s*/g,"")+"_Pos"
+                  temp_conten_temp_h_pos = "#define "+temp_list[j].singleReg[k].field.toUpperCase().replace(/\s*/g,"")+"_PosH"
+                  temp_conten_temp_l_pos = "#define "+temp_list[j].singleReg[k].field.toUpperCase().replace(/\s*/g,"")+"_PosL"
                 }
                 // temp_content= temp_content+"#define "+temp_list[j].singleReg[k].field.toUpperCase()+"_MASK"+" ".repeat(60-temp_conten_temp_mask.length)+this.reg_hex[num]+"\r\r"
                 if(this.CDefineCategory=="firmware"){
-                  temp_content= temp_content+"/*!< "+temp_list[j].offset+" "+temp_list[j].reg_gather_name+" \r*"+temp_list[j].singleReg[k].description+"\r*/\r"+temp_conten_temp_mask+" ".repeat(60-temp_conten_temp_mask.length)+this.reg_hex[num]+"\r"
-                  temp_content = temp_content+temp_conten_temp_pos+" ".repeat(60-temp_conten_temp_pos.length)+num.toString()+"\r\r"
+                  let tempNum = num- high_num + 1
+                  temp_content= temp_content+"/*!< "+temp_list[j].offset+" "+temp_list[j].reg_gather_name+" \r*"+temp_list[j].singleReg[k].description+"\r*/\r"+temp_conten_temp_mask+" ".repeat(60-temp_conten_temp_mask.length)+"("+this.reg_hex[tempNum]+" << "+(temp_list[j].singleReg[k].field.split('[')[0]).toUpperCase().replace(/\s*/g,"")+"_Pos"+")\r"
+                  temp_content = temp_content+temp_conten_temp_pos+" ".repeat(60-temp_conten_temp_pos.length)+num.toString()+"\r"
+                  temp_content = temp_content+temp_conten_temp_l_pos+" ".repeat(60-temp_conten_temp_l_pos.length)+high_num.toString()+"\r"
+                  temp_content = temp_content+temp_conten_temp_h_pos+" ".repeat(60-temp_conten_temp_h_pos.length)+num.toString()+"\r\r"
                 }else{
-                  temp_content= temp_content+"/*!< "+temp_list[j].offset+" "+temp_list[j].reg_gather_name+" \r*"+temp_list[j].singleReg[k].description+"\r*/\r"+temp_conten_temp_mask+" ".repeat(60-temp_conten_temp_mask.length)+(Math.pow(2, (parseInt(temp_list[j].singleReg[k].start_bit)-parseInt(temp_list[j].singleReg[k].end_bit))+1)-1)+"\r"
-                  temp_content = temp_content+temp_conten_temp_pos+" ".repeat(60-temp_conten_temp_pos.length)+temp_list[j].singleReg[k].end_bit+"\r\r"
+                  temp_content= temp_content+"/*!< "+temp_list[j].offset+" "+temp_list[j].reg_gather_name+" \r*"+temp_list[j].singleReg[k].description+"\r*/\r"+temp_conten_temp_mask+" ".repeat(60-temp_conten_temp_mask.length)+this.formatHex((Math.pow(2, (parseInt(temp_list[j].singleReg[k].start_bit)-parseInt(temp_list[j].singleReg[k].end_bit))+1)-1).toString(16))+"\r"
+                  temp_content = temp_content+temp_conten_temp_pos+" ".repeat(60-temp_conten_temp_pos.length)+temp_list[j].singleReg[k].end_bit+"\r"
                 }
               }
             }
