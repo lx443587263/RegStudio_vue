@@ -1463,14 +1463,14 @@ export default {
       let templist = []   //存储reset值
       for (var h = 0; h < singleList.length; ++h) {
           var tempRsetValue = "1".repeat((singleList[h]["start_bit"]-singleList[h]["end_bit"])+1)
-          templist.push(parseInt(tempRsetValue,2) << parseInt(singleList[h]["end_bit"]))
+          templist.push(parseInt(tempRsetValue,2) << parseInt(singleList[h]["end_bit"])>>>0)
       }
 
       if (templist.length != 0) {
           const result = templist.reduce((acc, binaryValue) => {
               return acc | binaryValue; // 进行位与运算
           });
-          return result.toString(2).padStart(32, '0')
+          return parseInt(result.toString(2).padStart(32, '0'),2).toString(16)
       } else {
           return "0"
       }
@@ -1545,7 +1545,7 @@ export default {
       }
     },
 
-            //格式化offset
+    //格式化offset
     formatHex(hexString){
       // 移除字符串开头的 "0x" 前缀（如果有的话）
       const cleanedString = hexString.replace(/^0x/, '');
