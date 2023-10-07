@@ -445,7 +445,10 @@ export default {
             // 使用 "0" 进行左侧填充，使字符串达到固定长度
             const paddedString = cleanedString.padStart(4, '0');
             // 添加 "0x" 前缀
-            const formattedString = `0x${paddedString}`;
+            let formattedString = `0x${paddedString}`;
+            if(formattedString.indexOf("h")!=-1){
+                formattedString = formattedString.replace(/h/,'');
+            }
             return formattedString;
         }
 

@@ -442,7 +442,7 @@ export default {
         13: "0X1FFF",
         14: "0X3FFF",
         15: "0X7FFF",
-        16: "0xFFF",
+        16: "0xFFFF",
         17: "0x1FFFF",
         18: "0x3FFFF",
         19: "0X7FFFF",
@@ -458,7 +458,7 @@ export default {
         29: "0x1FFFFFFF",
         30: "0x3FFFFFFF",
         31: "0x7FFFFFFF",
-        32: "0XFFFFFFF",
+        32: "0XFFFFFFFF",
       }
     }
   },
@@ -1508,7 +1508,7 @@ export default {
               let gather_res = {}
               gather_res.reg_gather_name = item.reg_gather_name
               gather_res.description = item.description
-              gather_res.address = this.start_addr+item.offset.replace(/^0x/, '')
+              gather_res.address = (parseInt(this.start_addr,16)+parseInt(item.offset.replace(/^0x/, ''),16)).toString(16)
               gather_res.reg_ram = item.reg_ram
               gather_res.retention = item.reg_ram
               gather_res.def_value  = item.reset.replace(/^0x/, '')
@@ -1520,7 +1520,7 @@ export default {
                   single_reg.description = value.description
                   single_reg.field = value.field
                   single_reg.bit_width = `${value.start_bit}:${value.end_bit}`
-                  single_reg.def_value = value.reset_value
+                  single_reg.def_value = value.reset_value.toString()
                   dataList.push(single_reg)
                 })
               }
@@ -1584,25 +1584,28 @@ export default {
  * @{
  * */
 
-/*** 
- * @brief General Purpose I/O
- */
-
-
+/** Type definition for device register
+ * ----------------------------------------------------------------------------
+ * */
 
 typedef struct {\r`
           let temp_content = ""
           let count = 0
           for(var j = 0;j<temp_list.length; j++){
+            if(j==0 && temp_list[0].offset!="0x0000"){
+              let tempOff =parseInt(temp_list[1].offset,16)-parseInt("0x0000",16)
+              let contentTemp
+                if((parseInt((tempOff+1)/4)-1)!=1){
+                  contentTemp = " ".repeat(10)+"uint32_t RSVD"+(count.toString()!='0'?count:"")+"["+(parseInt((tempOff+1)/4)-1).toString()+"];"
+                }else{
+                  contentTemp = " ".repeat(10)+"uint32_t RSVD"+(count.toString()!='0'?count:"")+";"
+                }
+                content = content+contentTemp+" ".repeat(60-contentTemp.length) +`\r`
+                count = count+1
+            }
             if(temp_list[j].offset.indexOf("~")!=-1){
               let tempOff =parseInt(temp_list[j].offset.split("~")[1],16)-parseInt(temp_list[j].offset.split("~")[0],16)
               let contentTemp = " ".repeat(4)+"uint32_t RSVD"+(count.toString()!='0'?count:"")+"["+((tempOff+1)/4).toString()+"];"
-              content = content+contentTemp+" ".repeat(60-contentTemp.length) +`/*${temp_list[j].offset},${temp_list[j].description+" ".repeat(51-(temp_list[j].description?(temp_list[j].description.length):'null'.length))}*/\r`
-              count = count+1
-            }
-            if((j+1) < temp_list.length && parseInt(temp_list[j+1].offset,16)-parseInt(temp_list[j].offset,16)!=4){
-              let tempOff =parseInt(temp_list[j+1].offset,16)-parseInt(temp_list[j].offset,16)
-              let contentTemp = " ".repeat(10)+"uint32_t RSVD"+(count.toString()!='0'?count:"")+"["+parseInt((tempOff+1)/4).toString()+"];"
               content = content+contentTemp+" ".repeat(60-contentTemp.length) +`/*${temp_list[j].offset},${temp_list[j].description+" ".repeat(51-(temp_list[j].description?(temp_list[j].description.length):'null'.length))}*/\r`
               count = count+1
             }else{
@@ -1625,6 +1628,19 @@ typedef struct {\r`
                 contentTemp = " ".repeat(10)+`uint32_t ${temp_list[j].reg_gather_name.toUpperCase().replace(/\s*/g,"")};`
               }
               content = content+contentTemp+" ".repeat(60-contentTemp.length) +`/*${temp_list[j].offset},${temp_list[j].description+" ".repeat(51-(temp_list[j].description?(temp_list[j].description.length):'null'.length))}*/\r`
+            }
+
+
+            if((j+1) < temp_list.length && parseInt(temp_list[j+1].offset,16)-parseInt(temp_list[j].offset,16)!=4){
+              let tempOff =parseInt(temp_list[j+1].offset,16)-parseInt(temp_list[j].offset,16)
+              let contentTemp
+              if((parseInt((tempOff+1)/4)-1)!=1){
+                contentTemp = " ".repeat(10)+"uint32_t RSVD"+(count.toString()!='0'?count:"")+"["+(parseInt((tempOff+1)/4)-1).toString()+"];"
+              }else{
+                contentTemp = " ".repeat(10)+"uint32_t RSVD"+(count.toString()!='0'?count:"")+";"
+              }
+              content = content+contentTemp+" ".repeat(60-contentTemp.length) +`\r`
+              count = count+1
             }
             if(temp_list[j].singleReg.length>0){
               for(var k in temp_list[j].singleReg){
@@ -1654,9 +1670,9 @@ typedef struct {\r`
                 }
                 // temp_content= temp_content+"#define "+temp_list[j].singleReg[k].field.toUpperCase()+"_MASK"+" ".repeat(60-temp_conten_temp_mask.length)+this.reg_hex[num]+"\r\r"
                 if(this.CDefineCategory=="firmware"){
-                  let tempNum = num- high_num + 1
+                  let tempNum = num - high_num + 1
                   temp_content= temp_content+"/*!< "+temp_list[j].offset+" "+temp_list[j].reg_gather_name+" \r*"+temp_list[j].singleReg[k].description+"\r*/\r"+temp_conten_temp_mask+" ".repeat(60-temp_conten_temp_mask.length)+"("+this.reg_hex[tempNum]+" << "+(temp_list[j].singleReg[k].field.split('[')[0]).toUpperCase().replace(/\s*/g,"")+"_Pos"+")\r"
-                  temp_content = temp_content+temp_conten_temp_pos+" ".repeat(60-temp_conten_temp_pos.length)+num.toString()+"\r"
+                  temp_content = temp_content+temp_conten_temp_pos+" ".repeat(60-temp_conten_temp_pos.length)+high_num.toString()+"\r"
                   temp_content = temp_content+temp_conten_temp_l_pos+" ".repeat(60-temp_conten_temp_l_pos.length)+high_num.toString()+"\r"
                   temp_content = temp_content+temp_conten_temp_h_pos+" ".repeat(60-temp_conten_temp_h_pos.length)+num.toString()+"\r\r"
                 }else{
