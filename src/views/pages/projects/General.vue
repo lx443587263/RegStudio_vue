@@ -9,7 +9,7 @@
                 <div style="float: left;">
                     <argon-button 
                     v-permission="['admin', 'edit', 'create', ]" variant="gradient"
-                        @click="fullValidEvent"><i class="vxe-icon-save"></i> Save</argon-button>
+                    @click="fullValidEvent"><i class="vxe-icon-save"></i> Save</argon-button>
                 </div>
                 <argon-button 
                     v-model="isLock" v-permission="['admin', 'edit', 'create']" variant="gradient"
@@ -175,6 +175,9 @@
                                     v-permission="['admin', 'edit', ]" type="primary" :icon="Edit"
                                         text @click="editRowEvent(row)"></el-button>
                                     <el-button 
+                                    v-permission="['admin','edit',]" type="success" :icon="CopyDocument"
+                                        text @click="copyRow(row,true)"></el-button>
+                                    <el-button 
                                     v-permission="['admin','delete',]" type="danger" :icon="Delete"
                                         text @click="delRegGatherRow(row)"></el-button>
                                 </template>
@@ -264,15 +267,14 @@
                 <el-dialog v-model="PerviewDisable" titile="预览" class="dialogLarge" :lock-scroll="true" width="60%" append-to-body :destroy-on-close="true">
                     <div id="bodyContainer">
                     </div>
-                </el-dialog>
-                
+                </el-dialog>       
             </div>
         </div>
     </div>
 </template>
   
 <script>
-import { ref, computed, onMounted, reactive, nextTick, watchEffect} from 'vue';
+import { ref, computed, onMounted, reactive, nextTick, watchEffect, onUnmounted} from 'vue';
 import VXETable from 'vxe-table';
 import ArgonButton from "@/components/ArgonButton.vue";
 import { getIpPageFileApi, perviewIpPageFileApi,deleteIpPageFileApi} from "@/http/api/ip"
@@ -281,7 +283,7 @@ import { getSingleList,deleteSingle,addSingle,editSingle} from "@/http/api/singl
 import { getValueList,deleteValue,addValue,editValue} from "@/http/api/value";
 import { useStore } from "vuex";
 import { useState } from '@/store/hook/useState';
-import { Delete, MoreFilled, Plus, Edit } from '@element-plus/icons-vue';
+import { Delete, MoreFilled, Plus, Edit, CopyDocument} from '@element-plus/icons-vue';
 import Sortable from 'sortablejs';
 // import { Axios } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
@@ -291,13 +293,40 @@ import Docxtemplater from 'docxtemplater';
 import { renderAsync } from "docx-preview";
 import { ElMessage } from 'element-plus';
 // import { useRouter } from "vue-router";
-
+import { getmark } from "@/util/watermark";
 
 export default {
     components: {
         ArgonButton,
     },
+
     setup() {
+        const dialogVisible = ref(false);
+
+        const getdateTime = ()=>{
+            let yy = new Date().getFullYear();
+            let mm = new Date().getMonth() + 1;
+            let dd = new Date().getDate();
+            let hh = new Date().getHours();
+            let mf =
+                new Date().getMinutes() < 10
+                ? "0" + new Date().getMinutes()
+                : new Date().getMinutes();
+            let ss =
+                new Date().getSeconds() < 10
+                ? "0" + new Date().getSeconds()
+                : new Date().getSeconds();
+            let gettime = yy + "-" + mm + "-" + dd + " " + hh + ":" + mf + ":" + ss;
+            return gettime;
+        }
+        const { watermark } = getmark();
+        onMounted(() => {
+            watermark(localStorage.getItem("user"),getdateTime());//水印名
+        });
+
+        onUnmounted(() => {
+            watermark("","");
+        });
         const store = useStore();
         
         //***************tableEdit****************/
@@ -332,7 +361,7 @@ export default {
 
         const validRules = ref({
             offset: [
-                { required: true, pattern:'^0[xX]([0-9A-Fa-f]{4})$',message: '必填项:(0x0004)' }
+                { required: true, pattern:'^0[xX]([0-9A-Fa-f]{4})',message: '必填项:(0x0000)' }
             ],
             reg_gather_name: [
                 { required: true, message: '必填项' }
@@ -413,6 +442,7 @@ export default {
             } else {
                 VXETable.modal.message({ status: 'success', content: '校验成功！' })
                 saveData()
+                dialogVisible.value = false;
             }
         }
 
@@ -575,6 +605,80 @@ export default {
             })
         }
 
+        //复制gather行
+        const copyRow=(row,later)=>{
+            const $table = GatherxTable.value
+            tableEditInfo.row = row
+            tableEditInfo.curTarget = {
+                rowIdx: row ? $table.getRowIndex(row) : null,
+            }
+            
+            $table.insertAt({}, row || -1).then(async ({ row }) => {
+                let idx;
+                let offset_temp;
+                if (tableEditInfo.curTarget.rowIdx === null) {
+                    idx = 0
+                    offset_temp = formatHex("0")
+                }
+                else {
+                    idx = later ? tableEditInfo.curTarget.rowIdx + 1 : tableEditInfo.curTarget.rowIdx
+                    if (idx != 0) {
+                        offset_temp = (parseInt(tableEditInfo.row.offset, 16) - 4).toString(16)
+                    } else {
+                        offset_temp = formatHex("0")
+                    }
+                }
+                //route.params.ip_uuid
+
+                row.ip_uuid = store.state.IP.current_ip_uuid
+                row.reg_gather_uuid = uuidv4()
+                row.tag = "draft"
+                columnList.forEach(p => {
+                    if (p.prop === "offset") {
+                        row[p.prop] = formatHex(offset_temp)
+                    } else if(p.prop != "ip_uuid" || p.prop != "reg_gather_uuid"){
+                        row[p.prop] = tableEditInfo.row[p.prop]
+                    }
+                })
+                let tempSingleReg = []
+                if(tableEditInfo.row["singleReg"].length>0){
+                    for( var i in tableEditInfo.row["singleReg"]){
+                        let temp={};
+                        temp["reg_gather_uuid"] = row.reg_gather_uuid
+                        temp["single_reg_uuid"] = uuidv4()
+                        temp["values"] = []
+                        regColumnList.forEach(x=>{
+                            temp[x.prop] = tableEditInfo.row["singleReg"][i][x.prop]
+                        })
+                        if(tableEditInfo.row["singleReg"][i]["values"].length>0){
+                            for( var k in tableEditInfo.row["singleReg"][i]["values"]){
+                                let valueTemp = {};
+                                valueTemp["single_reg_uuid"] = temp["single_reg_uuid"]
+                                valueTemp["value_uuid"] = uuidv4()
+                                regValue.forEach(s=>{
+                                    valueTemp[s.prop] = tableEditInfo.row["singleReg"][i]["values"][k][s.prop]
+                                })
+                                temp["values"].push(valueTemp)
+                            }
+                        }
+                        tempSingleReg.push(temp)
+                    }
+                }
+                console.log(tempSingleReg)
+                row.singleReg = tempSingleReg
+
+                console.log(tableEditInfo.row)
+                console.log(typeof(row.reg_gather_uuid))
+                await $table.setEditCell(row,"reg_gather_name")
+                await $table.isEditByRow(row)
+                if (tableData.value.length !== 0) {
+                    tableData.value.splice(idx, 0, row)
+                } else {
+                    tableData.value[0] = row
+                }
+            })
+        }
+
         //菜单页面
         const contextMenuClickEvent = ({ menu, row, column }) => {
             switch (menu.code) {
@@ -595,7 +699,7 @@ export default {
                     if (key == "offset") {
                         if (!tableData.value[i][key].includes("~")) {
                             if (i >= 1) {
-                                if ((parseInt(tableData.value[i][key], 16) - parseInt(tableData.value[i - 1][key], 16)) <= 4) {
+                                if ((parseInt(tableData.value[i][key], 16) - parseInt(tableData.value[i - 1][key], 16)) <= 4 ) {
                                     tableData.value[i][key] = formatHex((parseInt(tableData.value[i - 1][key], 16) + 4).toString(16))
                                 }
                             }
@@ -603,6 +707,7 @@ export default {
                     }
                 }
             }
+
         })
 
         const dialogFormVisible = ref(false)
@@ -1021,7 +1126,7 @@ export default {
             let templist = []   //存储reset值
             for (var h = 0; h < singleList.length; ++h) {
                 var tempRsetValue;
-                if ((singleList[h]["reset_value"]).includes("b")) {
+                if ((singleList[h]["reset_value"]).includes("b")&&!((singleList[h]["reset_value"]).includes("h"))) {
                     // console.log(parseInt("1'b00100".substr(("1'b00100").indexOf("b")), 2));
                     tempRsetValue = parseInt((singleList[h]["reset_value"]).substr((singleList[h]["reset_value"]).indexOf("b")+1), 2)
                 }
@@ -1212,6 +1317,7 @@ export default {
                 }
             })
         }
+       
 
         return {
             //拖拽相关
@@ -1286,6 +1392,8 @@ export default {
             expandIpPageFiles,
             PerviewDisable,
             deleteIpPageFiles,
+            copyRow,
+            CopyDocument,
         }
 
 

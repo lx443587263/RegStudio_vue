@@ -326,6 +326,7 @@
 
 <script>
 // import { DataTable } from "simple-datatables";
+import {onMounted,onUnmounted} from "vue";
 import ArgonButton from "@/components/ArgonButton.vue";
 import { mapState } from 'vuex';
 import { getIpListApi,deleteIp,getIpPageFileApi,perviewIpPageFileApi} from "@/http/api/ip"
@@ -344,7 +345,7 @@ import { ElMessage } from 'element-plus';
 import { renderAsync } from "docx-preview";
 import ExcelJS from "exceljs";
 import { getCategoryListApi } from "../../../http/api/ip";
-
+import { getmark } from "@/util/watermark";
 
 export default {
   name: "OrderList",
@@ -353,8 +354,36 @@ export default {
     // ArgonCheckbox,
   },
 
+  setup(){
+    const getdateTime = ()=>{
+            let yy = new Date().getFullYear();
+            let mm = new Date().getMonth() + 1;
+            let dd = new Date().getDate();
+            let hh = new Date().getHours();
+            let mf =
+                new Date().getMinutes() < 10
+                ? "0" + new Date().getMinutes()
+                : new Date().getMinutes();
+            let ss =
+                new Date().getSeconds() < 10
+                ? "0" + new Date().getSeconds()
+                : new Date().getSeconds();
+            let gettime = yy + "-" + mm + "-" + dd + " " + hh + ":" + mf + ":" + ss;
+            return gettime;
+        }
+        const { watermark } = getmark();
+        onMounted(() => {
+            watermark(localStorage.getItem("user"),getdateTime());//水印名
+        });
+
+        onUnmounted(() => {
+            watermark("","");
+        });
+  },
+
+
   data() {
-    return {
+    return { 
       current_user:localStorage.getItem('user'),
       bankendServeIP:localStorage.getItem("backendIp")+"ip/upload_file/",
       reg_gather_list:[],
@@ -566,8 +595,9 @@ export default {
   //     });
   //   }
   // },
-  methods:{
 
+
+  methods:{
     // addclassStatus(i){
     //   switch(i){
     //     case "Canceled" :return 'danger';
