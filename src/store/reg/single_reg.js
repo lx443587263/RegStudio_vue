@@ -15,6 +15,7 @@ const single_reg={
                 note: "",
                 description: "",
                 hw_RW: "",
+                reset_value:"",
             }
         }
     },
@@ -29,6 +30,7 @@ const single_reg={
             state.SingleRegInfo.field = obj.field
             state.SingleRegInfo.note = obj.note
             state.SingleRegInfo.description = obj.description
+            state.SingleRegInfo.reset_value = obj.reset_value
             addSingle(state.SingleRegInfo)
         },
         getSingleReg:function(state,list){

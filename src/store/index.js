@@ -8,6 +8,7 @@ import value from "./reg/value";
 import bootstrap from "bootstrap/dist/js/bootstrap.min.js";
 import template_file from "./templateFile"
 import category from "./category"
+import patterninfo from "./pattern"
 import createPersistedState from 'vuex-persistedstate'
 
 export default createStore({
@@ -83,6 +84,7 @@ export default createStore({
     user,
     template_file,
     category,
+    patterninfo,
   },
   plugins: [
     createPersistedState({
@@ -96,7 +98,7 @@ export default createStore({
         const data = JSON.stringify(state);
         sessionStorage.setItem(key, data);
       },
-      paths: ['IP', 'reg_gather_list', 'reg_gather', 'single_reg', 'value', 'user', 'template_file', 'category'] // 指定要保存的模块路径
+      paths: ['IP', 'reg_gather_list', 'reg_gather', 'single_reg', 'value', 'user', 'template_file', 'category', 'patterninfo'] // 指定要保存的模块路径
     })
     
   //   createPersistedState({    

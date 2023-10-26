@@ -2,236 +2,433 @@
   <div class="container-fluid py-4">
     <div class="row">
       <div class="col-12">
+        <div style="margin-bottom: 5px;">
+          <argon-button color="white" variant="outline" class="btn-icon ms-2 export"  @click="exportDialogExcelVisible = true">
+            <span class="btn-inner--icon">
+              <i class="ni ni-archive-2"></i>
+            </span>
+            <span class="btn-inner--text">导出Excel</span>
+          </argon-button>
+        </div>
         <div class="card">
-          <div class="card-header p-3">
-            <h5 class="mb-2">Referral Program</h5>
-            <p class="mb-0">
-              Track and find all the details about our referral program, your
-              stats and revenues.
-            </p>
-          </div>
-          <div class="card-body p-3">
-            <div class="row">
-              <outlined-counter-card
-                :duration="2500"
-                prefix="$"
-                :count="23980"
-                title="Earning"
-              />
-              <outlined-counter-card
-                prefix="$"
-                :count="2400"
-                title="Customers"
-              />
-              <outlined-counter-card
-                class="mt-4 mt-lg-0"
-                prefix="$"
-                :count="48"
-                title="Avg. Value"
-              />
-              <outlined-counter-card
-                :duration="3000"
-                class="mt-4 mt-lg-0"
-                suffix="%"
-                :count="4"
-                title="Refund Rate"
-              />
+          <div class="container-fluid">
+            <div style="width:300px; height:auto; float:right; display:inline">
+              <vxe-toolbar ref="toolbarRef" custom>
+              </vxe-toolbar>
+
             </div>
-            <div class="row mt-5">
-              <div class="col-lg-5 col-12">
-                <h6 class="mb-0">Referral Code</h6>
-                <p class="text-sm">
-                  Copy the code bellow to your registered provider.
-                </p>
-                <div
-                  class="border-dashed border-1 border-secondary border-radius-md p-3"
-                >
-                  <p class="text-xs mb-2">
-                    Generated 23 days ago by
-                    <span class="font-weight-bolder">softuidash23</span>
-                  </p>
-                  <p class="text-xs mb-3">
-                    <span class="font-weight-bolder">(Used one time)</span>
-                  </p>
-                  <div class="d-flex align-items-center">
-                    <div class="form-group w-70">
-                      <div class="input-group bg-gray-200">
-                        <input
-                          class="form-control form-control-sm"
-                          value="soft-ui-dashboard-vmsk392"
-                          type="text"
-                          disabled
-                          onfocus="focused(this)"
-                          onfocusout="defocused(this)"
-                        />
-                        <span
-                          class="input-group-text bg-transparent"
-                          data-bs-toggle="tooltip"
-                          data-bs-placement="top"
-                          title
-                          data-bs-original-title="Referral code expires in 24 hours"
-                          aria-label="Referral code expires in 24 hours"
-                        >
-                          <i class="ni ni-key-25"></i>
-                        </span>
+            <div style="margin-top: 10px;">
+              <p>
+                <vxe-input v-model="filterName" type="search" placeholder="试试全表搜索" @keyup="searchEvent"></vxe-input>
+              </p>
+            </div>
+            <vxe-table id="toolbar_demo3" ref="tableRef" height="500" border :column-config="{ resizable: true }"
+              :custom-config="{ storage: true }" :data="tableData" style="margin-bottom: 20px;">
+              <div v-for="(col, idx) in columnList" :key="idx" :index="idx">
+                <vxe-column
+                  v-if="col.prop == 'MBIST' || col.prop == 'TWO_NODE' || col.prop == 'CHECK_WAVE' || col.prop == 'JTAG_ACCESS'"
+                  :field="col.prop" :title="col.label" :filters="boolOptions" :filter-multiple="false">
+                  <template #edit="{ row }">
+                    <input v-model.lazy="row[col.prop]">
+                  </template>
+                </vxe-column>
+                <vxe-column v-else-if="col.prop == 'TIME'" :field="col.prop" :title="col.label" sortable
+                  :filters="DataFilter" :filter-method="customDateFilterMethod">
+                  <template #filter="{ $panel, column }">
+                    <template v-for="(option, i) in column.filters" :key="i">
+                      <div style="display: flex">
+                        <span style="line-height: 42px; margin-right: 5px; margin-left: 10px">{{ option.label }}</span>
+                        <vxe-input v-model="option.prop" type="datetime" placeholder="请选择" transfer clearable
+                          @input="$panel.changeOption($event, !!option.prop, option)" />
                       </div>
-                    </div>
-                    <a
-                      href="javascript:;"
-                      class="btn btn-sm btn-outline-secondary ms-2 px-3"
-                      >Copy</a
-                    >
-                  </div>
-                  <p class="text-xs mb-1">You cannot generate codes.</p>
-                  <p class="text-xs mb-0">
-                    <a href="javascript:;">Contact us</a> to generate more
-                    referrals link.
-                  </p>
-                </div>
+                    </template>
+                  </template>
+                </vxe-column>
+                <vxe-column v-else-if="col.prop == 'RTL_VERSION'" :field="col.prop" :title="col.label" sortable
+                  :filters="versionOptions" :filter-method="filterversionMethod"
+                  :filter-recover-method="filterversionRecoverMethod">
+                  <template #filter="{ $panel, column }">
+                    <input v-for="(option, index) in column.filters" :key="index" v-model="option.prop" type="type"
+                      class="my-input" @input="$panel.changeOption($event, !!option.prop, option)"
+                      @keyup.enter="$panel.confirmFilter()" placeholder="按回车确认筛选">
+                  </template>
+                </vxe-column>
+                <vxe-column v-else :field="col.prop" :title="col.label" sortable>
+                  <template #edit="{ row }">
+                    <input v-model.lazy="row[col.prop]">
+                  </template>
+                </vxe-column>
               </div>
-              <div class="col-lg-7 col-12 mt-4 mt-lg-0">
-                <h6 class="mb-0">How to use</h6>
-                <p class="text-sm">
-                  Integrate your referral code in 3 easy steps.
-                </p>
-                <div class="row">
-                  <transparent-info-card
-                    :icon="{ component: 'ni ni-money-coins', color: 'dark' }"
-                    description="1. Create & validate your referral link and get"
-                    value="<span class='small'>$</span>100"
-                  />
-                  <transparent-info-card
-                    :icon="{ component: 'ni ni-send', color: 'dark' }"
-                    description="2. For every order you make you get"
-                    value="10 <span class='small'>%</span>"
-                  />
-                  <transparent-info-card
-                    :icon="{ component: 'ni ni-spaceship', color: 'dark' }"
-                    description="3. Get other friends to generate link and get"
-                    value="<span class='small'>$</span>500"
-                  />
-                </div>
-              </div>
-            </div>
-            <hr class="horizontal dark" />
-            <div class="row mt-4">
-              <h6 class="mb-2">Other programs</h6>
-              <complex-background-card
-                image="https://raw.githubusercontent.com/creativetimofficial/public-assets/master/soft-ui-design-system/assets/img/window-desk.jpg"
-                description="User #hashtag in a photo on social media and get $10 for each purchase you make."
-                :action="{ route: 'javascript:;', label: 'Read more' }"
-              />
-              <complex-background-card
-                class="mt-4 mt-lg-0"
-                image="https://demos.creative-tim.com/soft-ui-dashboard-pro/assets/img/office-dark.jpg"
-                description="Send the invitation link to 10 friends and get a 50%
-                        coupon to use on any purchase."
-                :action="{ route: 'javascript:;', label: 'Read more' }"
-              />
-              <div class="col-lg-4 col-12 mt-4 mt-lg-0">
-                <div class="card border-dashed border-1 text-center h-100">
-                  <div
-                    class="card-body position-relative z-index-1 d-flex flex-column"
-                  >
-                    <div
-                      class="position-relative d-flex align-items-center justify-content-center h-100"
-                    >
-                      <img
-                        class="w-50 position-relative z-index-2"
-                        src="../../assets/img/illustrations/icon-documentation.svg"
-                        alt="illustration"
-                      />
-                    </div>
-                    <a
-                      class="text-sm text-secondary font-weight-bold mb-0 icon-move-right mt-2"
-                      href="javascript:;"
-                    >
-                      Join rocketship program
-                      <i
-                        class="fas fa-arrow-right text-sm ms-1"
-                        aria-hidden="true"
-                      ></i>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
+            </vxe-table>
+            <el-dialog v-model="exportDialogExcelVisible" class="dialogLarge" title="导出" append-to-body
+              :destroy-on-close="true">
+              <el-checkbox v-model="checkAll" :indeterminate="isIndeterminate" @change="handleCheckAllChange">Check
+                all</el-checkbox>
+              <el-checkbox-group v-model="checkedPatternField" @change="handleCheckedCitiesChange">
+                <el-checkbox v-for="city in PatternField" :key="city" :label="city">
+                  {{ city }}
+                </el-checkbox>
+              </el-checkbox-group>
+              <el-button type="primary" style="margin-left: 10px;padding: 10px;"
+                @click="downloadReg">导出</el-button>
+              <!-- <div id="bodyContainer"></div> -->
+            </el-dialog>
           </div>
         </div>
       </div>
     </div>
-    <div class="col-12 mt-4">
-      <orders-list-card
-        title="Top Referred Users"
-        :headers="['User', 'Value', 'Profit', 'Refunds']"
-        :lists="users"
-      />
-    </div>
   </div>
 </template>
 
-<script>
-import OutlinedCounterCard from "./components/OutlinedCounterCard.vue";
-import TransparentInfoCard from "./components/TransparentInfoCard.vue";
-import ComplexBackgroundCard from "./components/ComplexBackgroundCard.vue";
-import OrdersListCard from "@/examples/Cards/OrdersListCard.vue";
 
-export default {
-  name: "Referral",
-  components: {
-    OutlinedCounterCard,
-    TransparentInfoCard,
-    ComplexBackgroundCard,
-    OrdersListCard,
-  },
-  data() {
-    return {
-      users: [
-        {
-          title: "Alice Vinget",
-          order: "8.232",
-          values: ["$130.992", "$9.500", "13"],
-          info: "Refund rate is lower with 97% than other products",
-          img:
-            "https://demos.creative-tim.com/argon-dashboard-pro/assets/img/team-1.jpg",
-          icon: "bold-down text-success",
-        },
-        {
-          title: "John Alura",
-          order: "12.821",
-          values: ["$80.250", "$4.200", "40"],
-          img:
-            "https://demos.creative-tim.com/soft-ui-dashboard-pro/assets/img/team-2.jpg",
-          icon: "bold-down text-success",
-        },
-        {
-          title: "Andrew Sian",
-          order: "2.421",
-          values: ["$40.600", "$9.430", "54"],
-          img:
-            "https://demos.creative-tim.com/soft-ui-dashboard-pro/assets/img/team-3.jpg",
-          icon: "bold-up text-danger",
-        },
-        {
-          title: "Luca Willaim",
-          order: "5.921",
-          values: ["$91.300", "$7.364", "5"],
-          img:
-            "https://demos.creative-tim.com/soft-ui-dashboard-pro/assets/img/team-4.jpg",
-          icon: "bold-down text-success",
-        },
+<script setup>
+import ArgonButton from "@/components/ArgonButton.vue";
+import { ref, nextTick, reactive, computed, onMounted } from 'vue'
+import { getIpListApi } from "@/http/api/pattern_info"
+import { useStore } from "vuex";
+import { useState } from '@/store/hook/useState';
+import dayjs from "dayjs";
+import Sortable from 'sortablejs'
+import ExcelJS from "exceljs";
+import { ElMessage } from 'element-plus';
+import { saveAs } from "file-saver";
 
-        {
-          title: "Richel Manuel",
-          order: "921",
-          values: ["$140.925", "$20.531", "121"],
-          info: "Refund rate is higher with 70% than other products",
-          img:
-            "https://demos.creative-tim.com/soft-ui-dashboard-pro/assets/img/team-5.jpg",
-          icon: "bold-up text-danger",
-        },
-      ],
-    };
-  },
-};
+const store = useStore();
+const tableRef = ref()
+const toolbarRef = ref()
+const columnList = ref([
+  { prop: "TEST_ITEM", label: 'TestItem' },
+  { prop: "PATTERN_NAME", label: 'PatternName' },
+  { prop: "TEST_CATEGORY", label: 'TestCategory' },
+  { prop: "TEST_PURPOSE", label: 'TestPurpose' },
+  { prop: "TEST_PROCESS", label: 'TestProcess' },
+  { prop: "TEST_NOTES", label: 'TestNotes' },
+  { prop: "USER", label: 'User' },
+  { prop: "TIME", label: 'Time' },
+  { prop: "RTL_VERSION", label: 'RtlVersion' },
+  { prop: "NETLIST_VERSION", label: 'NetlistVersion' },
+  { prop: "SIM_MODE", label: 'SimMode' },
+  { prop: "TOOL", label: 'Tool' },
+  { prop: "CORNER", label: 'Corner' },
+  { prop: "MTM", label: 'Mtm' },
+  { prop: "SIM_SEED", label: 'SimSeed' },
+  { prop: "TWO_NODE", label: 'TwoNode' },
+  { prop: "MBIST", label: 'Mbist' },
+  { prop: "FPGA_FLOW", label: 'FPGAFlow' },
+  { prop: "FPGA_WORK", label: 'FPGAWork' },
+  { prop: "WORK_PATH", label: 'WorkPath' },
+  { prop: "LOG_NAME", label: 'LogName' },
+  { prop: "SIM_RESULTS", label: 'SimResults' },
+  { prop: "CHECK_WAVE", label: 'CheckWave' },
+  { prop: "JTAG_ACCESS", label: 'JtagAccess' },
+  { prop: "PATTERN_MD5", label: 'PatternMD5' },
+  { prop: "PROJECT_NAME", label: 'ProjectName' },
+])
+const DataFilter = ref([
+  { data: '', label: '起:' },
+  { data: '', label: '止:' }
+])
+const boolOptions = ref([
+  { label: 'True', value: true },
+  { label: 'False', value: false }
+])
+const versionOptions = ref([
+  { data: '' }
+])
+const Field = ["TEST_ITEM",
+      "PATTERN_NAME",
+      "TEST_CATEGORY",
+      "TEST_PURPOSE",
+      "TEST_PROCESS",
+      "TEST_NOTES",
+      "USER",
+      "TIME",
+      "RTL_VERSION",
+      "NETLIST_VERSION",
+      "SIM_MODE",
+      "TOOL",
+      "CORNER",
+      "MTM",
+      "SIM_SEED",
+      "TWO_NODE",
+      "MBIST",
+      "FPGA_FLOW",
+      "FPGA_WORK",
+      "WORK_PATH",
+      "LOG_NAME",
+      "SIM_RESULTS",
+      "CHECK_WAVE",
+      "JTAG_ACCESS",
+      "PATTERN_MD5",
+      "PROJECT_NAME"]
+const exportDialogExcelVisible=ref(false)
+const checkedPatternField = ref(Field)
+const PatternField = ref(Field)
+const filterversionRecoverMethod = ({ option }) => {
+  // 如果是自定义筛选模板，当为点击确认时，该选项将被恢复为默认值
+  option.data = ''
+}
+const filterversionMethod = ({ option, row }) => {
+  return row.RTL_VERSION === option.prop
+}
+getIpListApi().then(async (res) => {
+  await store.commit('patterninfo/PatternList', res)
+  // getCategoryList(res)
+})
+
+const storeState = useState('patterninfo', ['pattern_lists'])
+// let tableData = reactive(storeState.pattern_lists.value)
+/***************搜索数据**************/
+const filterName = ref('')
+
+let tableData = reactive(computed(() => searchEvent()))
+const searchEvent = () => {
+  const filterVal = String(filterName.value).trim().toLowerCase()
+  if (filterVal) {
+    const filterRE = new RegExp(filterVal, 'gi')
+    const searchProps = [
+      "TEST_ITEM",
+      "PATTERN_NAME",
+      "TEST_CATEGORY",
+      "TEST_PURPOSE",
+      "TEST_PROCESS",
+      "TEST_NOTES",
+      "USER",
+      "RTL_VERSION",
+      "PROJECT_NAME"]
+    const rest = storeState.pattern_lists.value.filter(item => searchProps.some(key => String(item[key]).toLowerCase().indexOf(filterVal) > -1))
+    return rest.map(row => {
+      const item = Object.assign({}, row)
+      searchProps.forEach(key => {
+        item[key] = String(item[key]).replace(filterRE, match => `${match}`);
+      })
+      return item
+    })
+  }
+  return storeState.pattern_lists.value
+}
+const stateDate = ref("")
+const customDateFilterMethod = ({ option, row }) => {
+
+  if (option.prop) {
+    if (option.label === "起:") {
+      stateDate.value = dayjs(option.prop).valueOf();
+    }
+    if (option.label === "止:") {
+      let date = dayjs(row.TIME).valueOf();
+      if (date > stateDate.value && date < dayjs(option.prop).valueOf()) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+  }
+}
+
+
+
+// const fixedColNameEvent = () => {
+//   const $table = tableRef.value
+//   if ($table) {
+//     $table.setColumnFixed('TEST_ITEM', 'left')
+//   }
+// }
+// const clearFixedColNameEvent = () => {
+//   const $table = tableRef.value
+//   if ($table) {
+//     $table.clearColumnFixed('TEST_ITEM')
+//   }
+// }
+nextTick(() => {
+  // 将表格和工具栏进行关联
+  const $table = tableRef.value
+  const $toolbar = toolbarRef.value
+  if ($table && $toolbar) {
+    $table.connect($toolbar)
+  }
+})
+
+const columnDrop = () => {
+  nextTick(() => {
+    const tbody = document.querySelector('.body--wrapper>.vxe-table--header .vxe-header--row');
+    Sortable.create(tbody, {
+      handle: '.vxe-header--column',
+      onEnd: ({ newIndex, oldIndex }) => {
+        let tableColumn = tableRef.value.getColumns()
+        let currRow = tableColumn.splice(oldIndex, 1)[0];
+        tableColumn.splice(newIndex, 0, currRow);
+        tableRef.value.loadColumn(tableColumn);
+        //此处可根据实际需求写
+      }
+    })
+  });
+}
+
+onMounted(() => {
+  columnDrop()
+})
+
+
+const checkAll=ref(false)
+const isIndeterminate=ref(true)
+
+
+const handleCheckAllChange = (val)=>{
+      checkedPatternField.value = val ? PatternField.value : []
+      isIndeterminate.value = false
+    }
+
+const handleCheckedCitiesChange = (value)=>{
+  const checkedCount = value.length
+  checkAll.value = checkedCount === PatternField.value.length
+  isIndeterminate.value = checkedCount > 0 && checkedCount < PatternField.value.length
+}
+
+const exportFile=(workbook,header, columns, dataList, expertName, sheetName)=>{
+      workbook.created = new Date()
+      workbook.modified = new Date()
+      let worksheet = workbook.addWorksheet(sheetName)
+      worksheet.properties.defaultColWidth = 14
+      worksheet.columns = columns
+      // 设置表头
+      worksheet.getRow(1).values = [expertName+" List"]
+      worksheet.mergeCells(1, 1, 1, columns.length) //第1行  第1列  合并到第1行的第n列
+      const title = worksheet.getRow(1).getCell(1)//第一行第一个单元格
+      title.font = { size: 24 }
+      worksheet.getRow(1).height = 40
+ 
+      worksheet.getRow(2).values = header
+      // 表头样式
+      worksheet.getRow(2).eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        // worksheet.getRow(2).getCell(colNumber).fill = {
+        //   type: 'pattern',
+        //   pattern: 'solid',
+        // }
+        worksheet.getRow(2).getCell(colNumber).border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' },
+        }
+        worksheet.getRow(2).getCell(colNumber).font = {
+          bold: true, 
+          color: { argb: '00000000' },
+          size:10
+        }
+      })
+ 
+      worksheet.addRows(dataList)
+      // 自定义样式
+      worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+        if (rowNumber > 1) {
+          worksheet.getRow(rowNumber).height = 28.6
+        }
+        worksheet.getRow(rowNumber).eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          // 文字居中
+          worksheet.getRow(rowNumber).getCell(colNumber).alignment = {
+            vertical: 'middle',
+            horizontal: 'center',
+          }
+          //边框样式
+          worksheet.getRow(rowNumber).getCell(colNumber).border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' },
+          }
+        })
+      })
+    }
+
+
+const downloadReg = () => {
+  if (tableData.length != 0) {
+    let workbook = new ExcelJS.Workbook()
+      const header = checkedPatternField.value
+      const value = {     "TEST_ITEM":"TEST_ITEM",
+    "PATTERN_NAME":"PATTERN_NAME",
+    "TEST_CATEGORY":"TEST_CATEGORY",
+    "TEST_PURPOSE":"TEST_PURPOSE",
+    "TEST_PROCESS":"TEST_PROCESS",
+    "TEST_NOTES":"TEST_NOTES",
+    "USER":"USER",
+    "TIME":"TIME",
+    "RTL_VERSION":"RTL_VERSION",
+    "NETLIST_VERSION":"NETLIST_VERSION",
+    "SIM_MODE":"SIM_MODE",
+    "TOOL":"TOOL",
+    "CORNER":"CORNER",
+    "MTM":"MTM",
+    "SIM_SEED":"SIM_SEED",
+    "TWO_NODE":"TWO_NODE",
+    "MBIST":"MBIST",
+    "FPGA_FLOW":"FPGA_FLOW",
+    "FPGA_WORK":"FPGA_WORK",
+    "WORK_PATH":"WORK_PATH",
+    "LOG_NAME":"LOG_NAME",
+    "SIM_RESULTS":"SIM_RESULTS",
+    "CHECK_WAVE":"CHECK_WAVE",
+    "JTAG_ACCESS":"JTAG_ACCESS",
+    "PATTERN_MD5":"PATTERN_MD5",
+    "PROJECT_NAME":"PROJECT_NAME"}
+      const columns = header.map((item) => {
+        return {
+          header: item,
+          key: value[item],
+          width: 30
+        }
+      })
+      const dataList = []
+      tableData.value.map((item) => {
+        let gather_res = {}
+        gather_res.TEST_ITEM = item.TEST_ITEM
+        gather_res.PATTERN_NAME = item.PATTERN_NAME
+        gather_res.TEST_CATEGORY = item.TEST_CATEGORY
+        gather_res.TEST_PURPOSE = item.TEST_PURPOSE
+        gather_res.TEST_PROCESS = item.TEST_PROCESS
+        gather_res.TEST_NOTES = item.TEST_NOTES
+        gather_res.USER = item.USER
+        gather_res.TIME = item.TIME
+        gather_res.RTL_VERSION = item.RTL_VERSION
+        gather_res.NETLIST_VERSION = item.NETLIST_VERSION
+        gather_res.SIM_MODE = item.SIM_MODE
+        gather_res.TOOL = item.TOOL
+        gather_res.CORNER = item.CORNER
+        gather_res.MTM = item.MTM
+        gather_res.SIM_SEED = item.SIM_SEED
+        gather_res.TWO_NODE = item.TWO_NODE
+        gather_res.MBIST = item.MBIST
+        gather_res.FPGA_FLOW = item.FPGA_FLOW
+        gather_res.FPGA_WORK = item.FPGA_WORK
+        gather_res.WORK_PATH = item.WORK_PATH
+        gather_res.LOG_NAME = item.LOG_NAME
+        gather_res.SIM_RESULTS = item.SIM_RESULTS
+        gather_res.CHECK_WAVE = item.CHECK_WAVE
+        gather_res.JTAG_ACCESS = item.JTAG_ACCESS
+        gather_res.PATTERN_MD5 = item.PATTERN_MD5
+        gather_res.PROJECT_NAME = item.PROJECT_NAME
+        dataList.push(gather_res)
+      })
+      let date = new Date()
+      exportFile(workbook, header, columns, dataList, date.toString(), "1")
+    
+    workbook.xlsx.writeBuffer().then((buffer) => {
+      const blob = new Blob([buffer],
+        { type: "application/octet-stream", }
+        // { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' }
+      )
+      saveAs(blob, `${(new Date()).toLocaleString()}.xlsx`)
+      // saveAs(blob, `${expertName}.xlsx`)
+    })
+  } else {
+    ElMessage({
+      showClose: true,
+      message: "数据为空",
+      type: 'error',
+    })
+  }
+}
+
 </script>
+
+<style lang='less' scoped></style>

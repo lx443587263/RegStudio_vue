@@ -391,11 +391,7 @@
                   />
                 </template>
               </sidenav-collapse-item>
-              <sidenav-item
-                :to="{ name: 'Referral' }"
-                mini-icon="R"
-                text="Referral"
-              />
+
             </ul>
           </template>
         </sidenav-collapse>
@@ -417,6 +413,11 @@
                   mini-icon="M"
                   text="操作日志"
                 />
+              <sidenav-item
+                :to="{ name: 'Pattern Info' }"
+                mini-icon="R"
+                text="Pattern日志"
+              />
               <!--<sidenav-collapse-item
                 refer="signinExample"
                 mini-icon="S"

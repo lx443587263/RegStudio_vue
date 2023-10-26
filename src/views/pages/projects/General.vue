@@ -38,6 +38,7 @@
                     <vxe-table 
                         ref="GatherxTable" keep-source :data="tableData" row-id="id"
                         border = "inner"
+                        :column-config="{resizable: true}"
                         :loading = "loading"
                         :edit-config="{ trigger: 'manual', mode: 'row' }" :menu-config="gatherTable.tableMenu" 
                         :checkbox-config="{checkField: 'checked'}"
@@ -56,6 +57,8 @@
                                     border = "inner" 
                                     keep-source :data="gatherRow.singleReg"
                                     max-height="400px"
+                                    :column-config="{resizable: true}"
+
                                     :edit-config="{ trigger: 'manual', mode: 'row' }" 
                                     :edit-rules="validRules"
                                     :expand-config="{lazy: true, loadMethod: loadContentMethod}"
@@ -1395,8 +1398,6 @@ export default {
             copyRow,
             CopyDocument,
         }
-
-
     },
 
 

@@ -339,7 +339,7 @@ import { getSingleList } from "@/http/api/singlereg";
 import { getValueList} from "@/http/api/value";
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
-import { saveAs} from "file-saver";
+import { saveAs } from "file-saver";
 import {getTemplateFileApi} from "@/http/api/template_file";
 import { ElMessage } from 'element-plus';
 import { renderAsync } from "docx-preview";
@@ -827,6 +827,7 @@ export default {
                     }
                   }
                 }
+                console.log(singleObjTemp)
                 this.addSingle(singleObjTemp)
 
                 getValueList(old_single_reg_uuid).then((res)=>{
@@ -1657,7 +1658,15 @@ typedef struct {\r`
               }else{
                 contentTemp = " ".repeat(10)+`uint32_t ${temp_list[j].reg_gather_name.toUpperCase().replace(/\s*/g,"")};`
               }
-              content = content+contentTemp+" ".repeat(60-contentTemp.length) +`/*${temp_list[j].offset},${temp_list[j].description+" ".repeat(51-(temp_list[j].description?(temp_list[j].description.length):'null'.length))}*/\r`
+                if(temp_list[j].description){
+                  if(temp_list[j].description.length<=28){
+                    content = content+contentTemp+" ".repeat(60-contentTemp.length) +`/*${temp_list[j].offset},${temp_list[j].description+" ".repeat(51-(temp_list[j].description?(temp_list[j].description.length):'null'.length))}*/\r`
+                  }else{
+                    content = content+contentTemp+" ".repeat(60-contentTemp.length) +`/*${temp_list[j].offset},${temp_list[j].description.slice(0,28)}*/\r`
+                  }
+                }else{
+                  content = content+contentTemp+" ".repeat(60-contentTemp.length) +`/*${temp_list[j].offset},${temp_list[j].description+" ".repeat(51-(temp_list[j].description?(temp_list[j].description.length):'null'.length))}*/\r`
+                }
             }
 
 

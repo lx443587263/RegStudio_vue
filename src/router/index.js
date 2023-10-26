@@ -24,7 +24,7 @@ import { createRouter, createWebHistory } from "vue-router";
 // import ProductsList from "../views/ecommerce/ProductsList.vue";
 // import OrderDetails from "../views/ecommerce/Orders/OrderDetails";
 // import OrderList from "../views/ecommerce/Orders/OrderList";
-// import Referral from "../views/ecommerce/Referral";
+import Referral from "../views/ecommerce/Referral";
 // import Reports from "../views/pages/Users/Reports.vue";
 // import NewUser from "../views/pages/Users/NewUser.vue";
 // import Settings from "../views/pages/Account/Settings.vue";
@@ -219,11 +219,11 @@ const routes = [
       requireAuth: true,
       role:['admin','edit','create','delete','read']}
   },
-  // {
-  //   path: "/ecommerce/referral",
-  //   name: "Referral",
-  //   component: Referral
-  // },
+  {
+    path: "/ecommerce/referral",
+    name: "Pattern Info",
+    component: Referral
+  },
   {
     path: "/pages/users/reports",
     name: "Reports",
