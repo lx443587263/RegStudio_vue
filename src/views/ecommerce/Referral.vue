@@ -53,6 +53,33 @@
                       @keyup.enter="$panel.confirmFilter()" placeholder="按回车确认筛选">
                   </template>
                 </vxe-column>
+                <vxe-column v-else-if="col.prop == 'USER'" :field="col.prop" :title="col.label" sortable
+                  :filters="userOptions" :filter-method="filterUserMethod"
+                  :filter-recover-method="filterUserRecoverMethod">
+                  <template #filter="{ $panel, column }">
+                    <input v-for="(option, index) in column.filters" :key="index" v-model="option.prop" type="type"
+                      class="my-input" @input="$panel.changeOption($event, !!option.prop, option)"
+                      @keyup.enter="$panel.confirmFilter()" placeholder="按回车确认筛选">
+                  </template>
+                </vxe-column>
+                <vxe-column v-else-if="col.prop == 'TEST_ITEM'" :field="col.prop" :title="col.label" sortable
+                  :filters="TestItemOptions" :filter-method="filterTestItemMethod"
+                  :filter-recover-method="filterTestItemRecoverMethod">
+                  <template #filter="{ $panel, column }">
+                    <input v-for="(option, index) in column.filters" :key="index" v-model="option.prop" type="type"
+                      class="my-input" @input="$panel.changeOption($event, !!option.prop, option)"
+                      @keyup.enter="$panel.confirmFilter()" placeholder="按回车确认筛选">
+                  </template>
+                </vxe-column>
+                <vxe-column v-else-if="col.prop == 'PROJECT_NAME'" :field="col.prop" :title="col.label" sortable
+                  :filters="ProjectNameOptions" :filter-method="filterProjectNameMethod"
+                  :filter-recover-method="filterProjectNameRecoverMethod">
+                  <template #filter="{ $panel, column }">
+                    <input v-for="(option, index) in column.filters" :key="index" v-model="option.prop" type="type"
+                      class="my-input" @input="$panel.changeOption($event, !!option.prop, option)"
+                      @keyup.enter="$panel.confirmFilter()" placeholder="按回车确认筛选">
+                  </template>
+                </vxe-column>
                 <vxe-column v-else :field="col.prop" :title="col.label" sortable>
                   <template #edit="{ row }">
                     <input v-model.lazy="row[col.prop]">
@@ -135,6 +162,15 @@ const boolOptions = ref([
 const versionOptions = ref([
   { data: '' }
 ])
+const userOptions = ref([
+  { data: '' }
+])
+const TestItemOptions = ref([
+  { data: '' }
+])
+const ProjectNameOptions = ref([
+  { data: '' }
+])
 const Field = ["TEST_ITEM",
       "PATTERN_NAME",
       "TEST_CATEGORY",
@@ -168,8 +204,29 @@ const filterversionRecoverMethod = ({ option }) => {
   // 如果是自定义筛选模板，当为点击确认时，该选项将被恢复为默认值
   option.data = ''
 }
+const filterUserRecoverMethod = ({ option }) => {
+  // 如果是自定义筛选模板，当为点击确认时，该选项将被恢复为默认值
+  option.data = ''
+}
+const filterTestItemRecoverMethod = ({ option }) => {
+  // 如果是自定义筛选模板，当为点击确认时，该选项将被恢复为默认值
+  option.data = ''
+}
+const filterProjectNameRecoverMethod = ({ option }) => {
+  // 如果是自定义筛选模板，当为点击确认时，该选项将被恢复为默认值
+  option.data = ''
+}
 const filterversionMethod = ({ option, row }) => {
   return row.RTL_VERSION === option.prop
+}
+const filterUserMethod = ({ option, row }) => {
+  return row.USER === option.prop
+}
+const filterTestItemMethod = ({ option, row }) => {
+  return row.TEST_ITEM === option.prop
+}
+const filterProjectNameMethod = ({ option, row }) => {
+  return row.PROJECT_NAME === option.prop
 }
 getIpListApi().then(async (res) => {
   await store.commit('patterninfo/PatternList', res)
