@@ -32,6 +32,11 @@
                     <input v-model.lazy="row[col.prop]">
                   </template>
                 </vxe-column>
+                <vxe-column v-if="col.prop == 'SIM_MODE'" :field="col.prop" :title="col.label" :filters="SimModeOptions" :filter-multiple="false">
+                  <template #edit="{ row }">
+                    <input v-model.lazy="row[col.prop]">
+                  </template>
+                </vxe-column>
                 <vxe-column v-else-if="col.prop == 'TIME'" :field="col.prop" :title="col.label" sortable
                   :filters="DataFilter" :filter-method="customDateFilterMethod">
                   <template #filter="{ $panel, column }">
@@ -158,6 +163,10 @@ const DataFilter = ref([
 const boolOptions = ref([
   { label: 'True', value: true },
   { label: 'False', value: false }
+])
+const SimModeOptions = ref([
+  { label: 'postgsim_pg', value: "postgsim_pg" },
+  { label: 'rsim', value: "rsim" }
 ])
 const versionOptions = ref([
   { data: '' }
