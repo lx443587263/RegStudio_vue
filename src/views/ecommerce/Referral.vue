@@ -3,7 +3,8 @@
     <div class="row">
       <div class="col-12">
         <div style="margin-bottom: 5px;">
-          <argon-button color="white" variant="outline" class="btn-icon ms-2 export"  @click="exportDialogExcelVisible = true">
+          <argon-button color="white" variant="outline" class="btn-icon ms-2 export"
+            @click="exportDialogExcelVisible = true">
             <span class="btn-inner--icon">
               <i class="ni ni-archive-2"></i>
             </span>
@@ -22,8 +23,9 @@
                 <vxe-input v-model="filterName" type="search" placeholder="试试全表搜索" @keyup="searchEvent"></vxe-input>
               </p>
             </div>
-            <vxe-table id="toolbar_demo3" ref="tableRef" height="500" border :column-config="{ resizable: true }"
-              :custom-config="{ storage: true }" :data="tableData" style="margin-bottom: 20px;">
+            <vxe-table id="toolbar_demo3" ref="tableRef" height="700" border :column-config="{ resizable: true }"
+              size="small" :custom-config="{ storage: true }" :data="tableData"
+              style="margin-bottom: 20px;">
               <div v-for="(col, idx) in columnList" :key="idx" :index="idx">
                 <vxe-column
                   v-if="col.prop == 'MBIST' || col.prop == 'TWO_NODE' || col.prop == 'CHECK_WAVE' || col.prop == 'JTAG_ACCESS'"
@@ -32,7 +34,8 @@
                     <input v-model.lazy="row[col.prop]">
                   </template>
                 </vxe-column>
-                <vxe-column v-if="col.prop == 'SIM_MODE'" :field="col.prop" :title="col.label" :filters="SimModeOptions" :filter-multiple="false">
+                <vxe-column v-if="col.prop == 'SIM_MODE'" :field="col.prop" :title="col.label" :filters="SimModeOptions"
+                  :filter-multiple="false">
                   <template #edit="{ row }">
                     <input v-model.lazy="row[col.prop]">
                   </template>
@@ -101,8 +104,7 @@
                   {{ city }}
                 </el-checkbox>
               </el-checkbox-group>
-              <el-button type="primary" style="margin-left: 10px;padding: 10px;"
-                @click="downloadReg">导出</el-button>
+              <el-button type="primary" style="margin-left: 10px;padding: 10px;" @click="downloadReg">导出</el-button>
               <!-- <div id="bodyContainer"></div> -->
             </el-dialog>
           </div>
@@ -181,32 +183,32 @@ const ProjectNameOptions = ref([
   { data: '' }
 ])
 const Field = ["TEST_ITEM",
-      "PATTERN_NAME",
-      "TEST_CATEGORY",
-      "TEST_PURPOSE",
-      "TEST_PROCESS",
-      "TEST_NOTES",
-      "USER",
-      "TIME",
-      "RTL_VERSION",
-      "NETLIST_VERSION",
-      "SIM_MODE",
-      "TOOL",
-      "CORNER",
-      "MTM",
-      "SIM_SEED",
-      "TWO_NODE",
-      "MBIST",
-      "FPGA_FLOW",
-      "FPGA_WORK",
-      "WORK_PATH",
-      "LOG_NAME",
-      "SIM_RESULTS",
-      "CHECK_WAVE",
-      "JTAG_ACCESS",
-      "PATTERN_MD5",
-      "PROJECT_NAME"]
-const exportDialogExcelVisible=ref(false)
+  "PATTERN_NAME",
+  "TEST_CATEGORY",
+  "TEST_PURPOSE",
+  "TEST_PROCESS",
+  "TEST_NOTES",
+  "USER",
+  "TIME",
+  "RTL_VERSION",
+  "NETLIST_VERSION",
+  "SIM_MODE",
+  "TOOL",
+  "CORNER",
+  "MTM",
+  "SIM_SEED",
+  "TWO_NODE",
+  "MBIST",
+  "FPGA_FLOW",
+  "FPGA_WORK",
+  "WORK_PATH",
+  "LOG_NAME",
+  "SIM_RESULTS",
+  "CHECK_WAVE",
+  "JTAG_ACCESS",
+  "PATTERN_MD5",
+  "PROJECT_NAME"]
+const exportDialogExcelVisible = ref(false)
 const checkedPatternField = ref(Field)
 const PatternField = ref(Field)
 const filterversionRecoverMethod = ({ option }) => {
@@ -261,7 +263,8 @@ const searchEvent = () => {
       "TEST_NOTES",
       "USER",
       "RTL_VERSION",
-      "PROJECT_NAME"]
+      "PROJECT_NAME",
+      "PATTERN_MD5"]
     const rest = storeState.pattern_lists.value.filter(item => searchProps.some(key => String(item[key]).toLowerCase().indexOf(filterVal) > -1))
     return rest.map(row => {
       const item = Object.assign({}, row)
@@ -335,149 +338,151 @@ onMounted(() => {
 })
 
 
-const checkAll=ref(false)
-const isIndeterminate=ref(true)
+const checkAll = ref(false)
+const isIndeterminate = ref(true)
 
 
-const handleCheckAllChange = (val)=>{
-      checkedPatternField.value = val ? PatternField.value : []
-      isIndeterminate.value = false
-    }
+const handleCheckAllChange = (val) => {
+  checkedPatternField.value = val ? PatternField.value : []
+  isIndeterminate.value = false
+}
 
-const handleCheckedCitiesChange = (value)=>{
+const handleCheckedCitiesChange = (value) => {
   const checkedCount = value.length
   checkAll.value = checkedCount === PatternField.value.length
   isIndeterminate.value = checkedCount > 0 && checkedCount < PatternField.value.length
 }
 
-const exportFile=(workbook,header, columns, dataList, expertName, sheetName)=>{
-      workbook.created = new Date()
-      workbook.modified = new Date()
-      let worksheet = workbook.addWorksheet(sheetName)
-      worksheet.properties.defaultColWidth = 14
-      worksheet.columns = columns
-      // 设置表头
-      worksheet.getRow(1).values = [expertName+" List"]
-      worksheet.mergeCells(1, 1, 1, columns.length) //第1行  第1列  合并到第1行的第n列
-      const title = worksheet.getRow(1).getCell(1)//第一行第一个单元格
-      title.font = { size: 24 }
-      worksheet.getRow(1).height = 40
- 
-      worksheet.getRow(2).values = header
-      // 表头样式
-      worksheet.getRow(2).eachCell({ includeEmpty: true }, (cell, colNumber) => {
-        // worksheet.getRow(2).getCell(colNumber).fill = {
-        //   type: 'pattern',
-        //   pattern: 'solid',
-        // }
-        worksheet.getRow(2).getCell(colNumber).border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' },
-        }
-        worksheet.getRow(2).getCell(colNumber).font = {
-          bold: true, 
-          color: { argb: '00000000' },
-          size:10
-        }
-      })
- 
-      worksheet.addRows(dataList)
-      // 自定义样式
-      worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
-        if (rowNumber > 1) {
-          worksheet.getRow(rowNumber).height = 28.6
-        }
-        worksheet.getRow(rowNumber).eachCell({ includeEmpty: true }, (cell, colNumber) => {
-          // 文字居中
-          worksheet.getRow(rowNumber).getCell(colNumber).alignment = {
-            vertical: 'middle',
-            horizontal: 'center',
-          }
-          //边框样式
-          worksheet.getRow(rowNumber).getCell(colNumber).border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' },
-          }
-        })
-      })
+const exportFile = (workbook, header, columns, dataList, expertName, sheetName) => {
+  workbook.created = new Date()
+  workbook.modified = new Date()
+  let worksheet = workbook.addWorksheet(sheetName)
+  worksheet.properties.defaultColWidth = 14
+  worksheet.columns = columns
+  // 设置表头
+  worksheet.getRow(1).values = [expertName + " List"]
+  worksheet.mergeCells(1, 1, 1, columns.length) //第1行  第1列  合并到第1行的第n列
+  const title = worksheet.getRow(1).getCell(1)//第一行第一个单元格
+  title.font = { size: 24 }
+  worksheet.getRow(1).height = 40
+
+  worksheet.getRow(2).values = header
+  // 表头样式
+  worksheet.getRow(2).eachCell({ includeEmpty: true }, (cell, colNumber) => {
+    // worksheet.getRow(2).getCell(colNumber).fill = {
+    //   type: 'pattern',
+    //   pattern: 'solid',
+    // }
+    worksheet.getRow(2).getCell(colNumber).border = {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thin' },
+      right: { style: 'thin' },
     }
+    worksheet.getRow(2).getCell(colNumber).font = {
+      bold: true,
+      color: { argb: '00000000' },
+      size: 10
+    }
+  })
+
+  worksheet.addRows(dataList)
+  // 自定义样式
+  worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+    if (rowNumber > 1) {
+      worksheet.getRow(rowNumber).height = 28.6
+    }
+    worksheet.getRow(rowNumber).eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      // 文字居中
+      worksheet.getRow(rowNumber).getCell(colNumber).alignment = {
+        vertical: 'middle',
+        horizontal: 'center',
+      }
+      //边框样式
+      worksheet.getRow(rowNumber).getCell(colNumber).border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' },
+      }
+    })
+  })
+}
 
 
 const downloadReg = () => {
   if (tableData.length != 0) {
     let workbook = new ExcelJS.Workbook()
-      const header = checkedPatternField.value
-      const value = {     "TEST_ITEM":"TEST_ITEM",
-    "PATTERN_NAME":"PATTERN_NAME",
-    "TEST_CATEGORY":"TEST_CATEGORY",
-    "TEST_PURPOSE":"TEST_PURPOSE",
-    "TEST_PROCESS":"TEST_PROCESS",
-    "TEST_NOTES":"TEST_NOTES",
-    "USER":"USER",
-    "TIME":"TIME",
-    "RTL_VERSION":"RTL_VERSION",
-    "NETLIST_VERSION":"NETLIST_VERSION",
-    "SIM_MODE":"SIM_MODE",
-    "TOOL":"TOOL",
-    "CORNER":"CORNER",
-    "MTM":"MTM",
-    "SIM_SEED":"SIM_SEED",
-    "TWO_NODE":"TWO_NODE",
-    "MBIST":"MBIST",
-    "FPGA_FLOW":"FPGA_FLOW",
-    "FPGA_WORK":"FPGA_WORK",
-    "WORK_PATH":"WORK_PATH",
-    "LOG_NAME":"LOG_NAME",
-    "SIM_RESULTS":"SIM_RESULTS",
-    "CHECK_WAVE":"CHECK_WAVE",
-    "JTAG_ACCESS":"JTAG_ACCESS",
-    "PATTERN_MD5":"PATTERN_MD5",
-    "PROJECT_NAME":"PROJECT_NAME"}
-      const columns = header.map((item) => {
-        return {
-          header: item,
-          key: value[item],
-          width: 30
-        }
-      })
-      const dataList = []
-      tableData.value.map((item) => {
-        let gather_res = {}
-        gather_res.TEST_ITEM = item.TEST_ITEM
-        gather_res.PATTERN_NAME = item.PATTERN_NAME
-        gather_res.TEST_CATEGORY = item.TEST_CATEGORY
-        gather_res.TEST_PURPOSE = item.TEST_PURPOSE
-        gather_res.TEST_PROCESS = item.TEST_PROCESS
-        gather_res.TEST_NOTES = item.TEST_NOTES
-        gather_res.USER = item.USER
-        gather_res.TIME = item.TIME
-        gather_res.RTL_VERSION = item.RTL_VERSION
-        gather_res.NETLIST_VERSION = item.NETLIST_VERSION
-        gather_res.SIM_MODE = item.SIM_MODE
-        gather_res.TOOL = item.TOOL
-        gather_res.CORNER = item.CORNER
-        gather_res.MTM = item.MTM
-        gather_res.SIM_SEED = item.SIM_SEED
-        gather_res.TWO_NODE = item.TWO_NODE
-        gather_res.MBIST = item.MBIST
-        gather_res.FPGA_FLOW = item.FPGA_FLOW
-        gather_res.FPGA_WORK = item.FPGA_WORK
-        gather_res.WORK_PATH = item.WORK_PATH
-        gather_res.LOG_NAME = item.LOG_NAME
-        gather_res.SIM_RESULTS = item.SIM_RESULTS
-        gather_res.CHECK_WAVE = item.CHECK_WAVE
-        gather_res.JTAG_ACCESS = item.JTAG_ACCESS
-        gather_res.PATTERN_MD5 = item.PATTERN_MD5
-        gather_res.PROJECT_NAME = item.PROJECT_NAME
-        dataList.push(gather_res)
-      })
-      let date = new Date()
-      exportFile(workbook, header, columns, dataList, date.toString(), "1")
-    
+    const header = checkedPatternField.value
+    const value = {
+      "TEST_ITEM": "TEST_ITEM",
+      "PATTERN_NAME": "PATTERN_NAME",
+      "TEST_CATEGORY": "TEST_CATEGORY",
+      "TEST_PURPOSE": "TEST_PURPOSE",
+      "TEST_PROCESS": "TEST_PROCESS",
+      "TEST_NOTES": "TEST_NOTES",
+      "USER": "USER",
+      "TIME": "TIME",
+      "RTL_VERSION": "RTL_VERSION",
+      "NETLIST_VERSION": "NETLIST_VERSION",
+      "SIM_MODE": "SIM_MODE",
+      "TOOL": "TOOL",
+      "CORNER": "CORNER",
+      "MTM": "MTM",
+      "SIM_SEED": "SIM_SEED",
+      "TWO_NODE": "TWO_NODE",
+      "MBIST": "MBIST",
+      "FPGA_FLOW": "FPGA_FLOW",
+      "FPGA_WORK": "FPGA_WORK",
+      "WORK_PATH": "WORK_PATH",
+      "LOG_NAME": "LOG_NAME",
+      "SIM_RESULTS": "SIM_RESULTS",
+      "CHECK_WAVE": "CHECK_WAVE",
+      "JTAG_ACCESS": "JTAG_ACCESS",
+      "PATTERN_MD5": "PATTERN_MD5",
+      "PROJECT_NAME": "PROJECT_NAME"
+    }
+    const columns = header.map((item) => {
+      return {
+        header: item,
+        key: value[item],
+        width: 30
+      }
+    })
+    const dataList = []
+    tableData.value.map((item) => {
+      let gather_res = {}
+      gather_res.TEST_ITEM = item.TEST_ITEM
+      gather_res.PATTERN_NAME = item.PATTERN_NAME
+      gather_res.TEST_CATEGORY = item.TEST_CATEGORY
+      gather_res.TEST_PURPOSE = item.TEST_PURPOSE
+      gather_res.TEST_PROCESS = item.TEST_PROCESS
+      gather_res.TEST_NOTES = item.TEST_NOTES
+      gather_res.USER = item.USER
+      gather_res.TIME = item.TIME
+      gather_res.RTL_VERSION = item.RTL_VERSION
+      gather_res.NETLIST_VERSION = item.NETLIST_VERSION
+      gather_res.SIM_MODE = item.SIM_MODE
+      gather_res.TOOL = item.TOOL
+      gather_res.CORNER = item.CORNER
+      gather_res.MTM = item.MTM
+      gather_res.SIM_SEED = item.SIM_SEED
+      gather_res.TWO_NODE = item.TWO_NODE
+      gather_res.MBIST = item.MBIST
+      gather_res.FPGA_FLOW = item.FPGA_FLOW
+      gather_res.FPGA_WORK = item.FPGA_WORK
+      gather_res.WORK_PATH = item.WORK_PATH
+      gather_res.LOG_NAME = item.LOG_NAME
+      gather_res.SIM_RESULTS = item.SIM_RESULTS
+      gather_res.CHECK_WAVE = item.CHECK_WAVE
+      gather_res.JTAG_ACCESS = item.JTAG_ACCESS
+      gather_res.PATTERN_MD5 = item.PATTERN_MD5
+      gather_res.PROJECT_NAME = item.PROJECT_NAME
+      dataList.push(gather_res)
+    })
+    let date = new Date()
+    exportFile(workbook, header, columns, dataList, date.toString(), "1")
+
     workbook.xlsx.writeBuffer().then((buffer) => {
       const blob = new Blob([buffer],
         { type: "application/octet-stream", }
@@ -497,4 +502,5 @@ const downloadReg = () => {
 
 </script>
 
-<style lang='less' scoped></style>
+<style scoped>
+</style>
