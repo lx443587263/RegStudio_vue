@@ -34,7 +34,7 @@
                     <input v-model.lazy="row[col.prop]">
                   </template>
                 </vxe-column>
-                <vxe-column v-if="col.prop == 'SIM_MODE'" :field="col.prop" :title="col.label" :filters="SimModeOptions"
+                <vxe-column v-else-if="col.prop == 'SIM_MODE'" :field="col.prop" :title="col.label" :filters="SimModeOptions"
                   :filter-multiple="false">
                   <template #edit="{ row }">
                     <input v-model.lazy="row[col.prop]">
@@ -55,6 +55,15 @@
                 <vxe-column v-else-if="col.prop == 'RTL_VERSION'" :field="col.prop" :title="col.label" sortable
                   :filters="versionOptions" :filter-method="filterversionMethod"
                   :filter-recover-method="filterversionRecoverMethod">
+                  <template #filter="{ $panel, column }">
+                    <input v-for="(option, index) in column.filters" :key="index" v-model="option.prop" type="type"
+                      class="my-input" @input="$panel.changeOption($event, !!option.prop, option)"
+                      @keyup.enter="$panel.confirmFilter()" placeholder="按回车确认筛选">
+                  </template>
+                </vxe-column>
+                <vxe-column v-else-if="col.prop == 'SIM_RESULTS'" :field="col.prop" :title="col.label" sortable
+                  :filters="simResultsOptions" :filter-method="filterSimResultsMethod"
+                  :filter-recover-method="filterSimResultsRecoverMethod">
                   <template #filter="{ $panel, column }">
                     <input v-for="(option, index) in column.filters" :key="index" v-model="option.prop" type="type"
                       class="my-input" @input="$panel.changeOption($event, !!option.prop, option)"
@@ -82,6 +91,15 @@
                 <vxe-column v-else-if="col.prop == 'PROJECT_NAME'" :field="col.prop" :title="col.label" sortable
                   :filters="ProjectNameOptions" :filter-method="filterProjectNameMethod"
                   :filter-recover-method="filterProjectNameRecoverMethod">
+                  <template #filter="{ $panel, column }">
+                    <input v-for="(option, index) in column.filters" :key="index" v-model="option.prop" type="type"
+                      class="my-input" @input="$panel.changeOption($event, !!option.prop, option)"
+                      @keyup.enter="$panel.confirmFilter()" placeholder="按回车确认筛选">
+                  </template>
+                </vxe-column>
+                <vxe-column v-else-if="col.prop == 'NETLIST_VERSION'" :field="col.prop" :title="col.label" sortable
+                  :filters="NetListOptions" :filter-method="filterNetListMethod"
+                  :filter-recover-method="filterNetListRecoverMethod">
                   <template #filter="{ $panel, column }">
                     <input v-for="(option, index) in column.filters" :key="index" v-model="option.prop" type="type"
                       class="my-input" @input="$panel.changeOption($event, !!option.prop, option)"
@@ -182,6 +200,12 @@ const TestItemOptions = ref([
 const ProjectNameOptions = ref([
   { data: '' }
 ])
+const simResultsOptions = ref([
+  { data: '' }
+])
+const NetListOptions = ref([
+  { data: '' }
+])
 const Field = ["TEST_ITEM",
   "PATTERN_NAME",
   "TEST_CATEGORY",
@@ -227,6 +251,14 @@ const filterProjectNameRecoverMethod = ({ option }) => {
   // 如果是自定义筛选模板，当为点击确认时，该选项将被恢复为默认值
   option.data = ''
 }
+const filterSimResultsRecoverMethod = ({ option }) => {
+  // 如果是自定义筛选模板，当为点击确认时，该选项将被恢复为默认值
+  option.data = ''
+}
+const filterNetListRecoverMethod = ({ option }) => {
+  // 如果是自定义筛选模板，当为点击确认时，该选项将被恢复为默认值
+  option.data = ''
+}
 const filterversionMethod = ({ option, row }) => {
   return row.RTL_VERSION === option.prop
 }
@@ -238,6 +270,12 @@ const filterTestItemMethod = ({ option, row }) => {
 }
 const filterProjectNameMethod = ({ option, row }) => {
   return row.PROJECT_NAME === option.prop
+}
+const filterSimResultsMethod = ({ option, row }) => {
+  return row.SIM_RESULTS === option.prop
+}
+const filterNetListMethod = ({ option, row }) => {
+  return row.NETLIST_VERSION === option.prop
 }
 getIpListApi().then(async (res) => {
   await store.commit('patterninfo/PatternList', res)
