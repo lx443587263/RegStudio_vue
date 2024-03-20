@@ -7,3 +7,12 @@ export const getModifyDataApi=()=>{
         method: "get",
     });
 }
+
+//分页
+export const getModifyDataBypageApi=(params)=>{
+    return serviceAxios({
+        url: "ip/modification/cut_page",
+        method: "get",
+        params:params
+    });
+}

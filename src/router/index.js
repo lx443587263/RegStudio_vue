@@ -14,8 +14,8 @@ import { createRouter, createWebHistory } from "vue-router";
 // import SweetAlerts from "../views/pages/SweetAlerts.vue";
 // import Notifications from "../views/pages/Notifications.vue";
 // import Kanban from "../views/applications/Kanban.vue";
-// import Wizard from "../views/applications/wizard/Wizard.vue";
-// import DataTables from "../views/applications/DataTables.vue";
+import Wizard from "../views/applications/wizard/Wizard.vue";
+import DataTables from "../views/applications/DataTables.vue";
 // import Calendar from "../views/applications/Calendar.vue";
 // import Analytics from "../views/applications/analytics/Analytics.vue";
 // import EcommerceOverview from "../views/ecommerce/overview/Overview.vue";
@@ -160,16 +160,17 @@ const routes = [
     name: "Kanban",
     component: Kanban
   },
-  // {
-  //   path: "/applications/wizard",
-  //   name: "Wizard",
-  //   component: Wizard
-  // },
-  // {
-  //   path: "/applications/data-tables",
-  //   name: "Data Tables",
-  //   component: DataTables
-  // },
+  {
+    path: "/applications/wizard",
+    name: "Wizard",
+    component: Wizard
+  },
+  {
+    path: "/applications/data-tables",
+    name: "Data Tables",
+    component: DataTables,
+    meta:{role:['admin']}
+  },
   // {
   //   path: "/applications/calendar",
   //   name: "Calendar",

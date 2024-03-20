@@ -1,57 +1,34 @@
 <template>
-  <div class="py-4 h-100 container-fluid">
+  <div class="py-4 container-fluid">
     <div class="row">
-      <div class="text-center col-12">
-        <h3 class="mt-5 text-white">Build Your Profile</h3>
-        <h5 class="text-white font-weight-normal">
-          This information will let us know more about you.
-        </h5>
-        <div class="mb-5 multisteps-form">
-          <!--progress bar-->
-          <div class="row mt-5">
-            <div class="mx-auto my-5 col-12 col-lg-8">
-              <div class="multisteps-form__progress">
-                <button
-                  class="multisteps-form__progress-btn"
-                  type="button"
-                  title="User Info"
-                  :class="activeStep >= 0 ? activeClass : ''"
-                  @click="activeStep = 0"
-                >
-                  <span>About</span>
-                </button>
-                <button
-                  class="multisteps-form__progress-btn"
-                  type="button"
-                  title="Address"
-                  :class="activeStep >= 1 ? activeClass : ''"
-                  @click="activeStep = 1"
-                >
-                  <span>Account</span>
-                </button>
-                <button
-                  class="multisteps-form__progress-btn"
-                  type="button"
-                  title="Order Info"
-                  :class="activeStep === 2 ? activeClass : ''"
-                  @click="activeStep = 2"
-                >
-                  <span>Address</span>
-                </button>
+      <div class="col-12">
+        <div class="card">
+          <!-- Card header -->
+          <div class="pb-0 card-header">
+            <div class="d-lg-flex">
+              <div>
+                <h5 class="mb-0">版本变更日志</h5>
               </div>
             </div>
           </div>
-          <!--form panels-->
-          <div class="row">
-            <div class="m-auto col-12 col-lg-8">
-              <form class="multisteps-form__form">
-                <!--single form panel-->
-                <about v-if="activeStep === 0" />
-                <!--single form panel-->
-                <account :class="activeStep === 1 ? activeClass : ''" />
-                <!--single form panel-->
-                <wizard-address :class="activeStep === 2 ? activeClass : ''" />
-              </form>
+          <div class="px-0 pb-0 card-body">
+            <div class="container-fluid">
+              <div>
+                <vxe-table
+                 
+                  show-overflow
+                  height="800"
+                  :row-config="{isHover: true}"
+                  :data="tableData"
+                  :scroll-y="{enabled: true}">
+                  <vxe-column type="seq" width="100"></vxe-column>
+                  <vxe-column field="operate_ip_name" title="ip名字" sortable></vxe-column>
+                  <vxe-column field="source_project" title="源项目" sortable></vxe-column>
+                  <vxe-column field="des_project" title="目标项目"></vxe-column>
+                  <vxe-column field="edit_user" title="修改人"></vxe-column>
+                  <vxe-column field="data" title="修改日期"></vxe-column>
+                </vxe-table>
+              </div>
             </div>
           </div>
         </div>
@@ -60,33 +37,17 @@
   </div>
 </template>
 
-<script>
-import About from "./components/About.vue";
-import Account from "./components/Account.vue";
-import WizardAddress from "./components/Address.vue";
-export default {
-  name: "Wizard",
-  components: { About, Account, WizardAddress },
-  data() {
-    return {
-      activeClass: "js-active position-relative",
-      activeStep: 0,
-      formSteps: 2,
-    };
-  },
-  methods: {
-    nextStep() {
-      if (this.activeStep < this.formSteps) {
-        this.activeStep += 1;
-      } else {
-        this.activeStep -= 1;
-      }
-    },
-    prevStep() {
-      if (this.activeStep > 0) {
-        this.activeStep -= 1;
-      }
-    },
-  },
-};
+
+
+
+<script setup>
+import {getProjectChangeApi} from '@/http/api/projectchange'
+import { ref } from 'vue'
+const tableData = ref([])
+setTimeout(() => {
+  // 模拟数据
+  getProjectChangeApi().then(res=>{
+    tableData.value = res
+  })
+}, 100)
 </script>

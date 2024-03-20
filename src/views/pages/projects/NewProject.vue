@@ -62,19 +62,31 @@
           </div>
           <div class="row">
             <div class="col-6">
-              <el-form-item v-if="ip_info.private_project" label="Chip" prop="version">
-                <el-input v-model="ip_info.version"/>
+              <el-form-item v-if="ip_info.private_project" label="Version" prop="version">
+                <el-input v-model="ip_info.version" placeholder="e.g.v0.1 v0.2"/>
               </el-form-item>
               <el-form-item v-else label="Version" prop="version">
-                <el-input v-model="ip_info.version"/>
+                <el-input v-model="ip_info.version" placeholder="e.g.v0.1 v0.2"/>
               </el-form-item>
             </div>
             <div class="col-6">
-              <el-form-item v-if="ip_info.private_project" label="Child Version" prop="child_version">
-                <el-input v-model="ip_info.child_version"/>
+              <el-form-item v-if="ip_info.private_project" label="Chip Version" prop="child_version">
+                <el-input v-model="ip_info.child_version" placeholder="e.g.A B"/>
               </el-form-item>
             </div>
           </div>
+          <!--项目名-->
+          <el-form-item v-if="ip_info.private_project" label="Porject" prop="project">
+            <el-select v-model="ip_info.project" placeholder="please select Project" style="width: 100%">
+                <!-- <el-option label="Interface" value="Interface" /> -->
+                <el-option v-for="(item,index) in project_list" :key="index" :label=item.project+item.version :value=item.project_uuid></el-option>
+              </el-select>
+            <!-- <el-input v-model="ip_info.projec"/> -->
+          </el-form-item>
+          <el-form-item v-else label="Porject" prop="project">
+            <MultipleSelect v-model="value" :options="options"></MultipleSelect>
+          </el-form-item>
+          <!--项目名-->
           <el-form-item label="IP Description" prop="description">
             <el-input v-model="ip_info.description" type="textarea" />
           </el-form-item>
@@ -279,14 +291,16 @@ import Quill from "quill";
 import { v4 as uuidv4 } from 'uuid';
 import { mapMutations,mapState } from 'vuex';
 import { getCategoryApi } from "@/http/api/category"
-import { getCategoryListApi } from "@/http/api/ip"
-
+import { getProjectApi ,editProjectApi} from "@/http/api/project"
+import { getCategoryListApi,getProjectListApi } from "@/http/api/ip"
+import MultipleSelect from "./components/MultipleSelect"
 // import {userGet} from "@/http/api/user"
 
 
 export default {
   name: "NewProject",
   components: {
+    MultipleSelect
   },
   data() {
     return {
@@ -312,7 +326,7 @@ export default {
         version:"",
         child_version:"",
         see_permission:"",
-        
+        project:""
       },
       config: {
         allowInput: true,
@@ -321,13 +335,15 @@ export default {
         ip_name:{required: true, message: 'Please input IP name', trigger: 'blur' },
         category:{required: true, message: 'Please Select Category', trigger: 'blur' },
         version:{required: true, message: 'Please input version', trigger: 'blur'},
-        child_version:{required: true, message: 'Please input child_version', trigger: 'blur'},
+        // child_version:{required: true, message: 'Please input child_version', trigger: 'blur'},
       },
       Option:{
         key: Number,
         label: String,
         disabled: Boolean,
-      }
+      },
+      value: [],
+      options: []
     };
   },
   // watch:{
@@ -342,11 +358,21 @@ export default {
   // },
   computed:{
     ...mapState('category',['category_list']),
+    ...mapState('project',['project_list']),
     ...mapState('user',['userlist']),
   },
   created(){
+    this.project_list.forEach(element => {
+      let temp={};
+      temp.value=element.project_uuid
+      temp.label=element.project+element.version
+      this.options.push(temp)
+    });
     getCategoryApi().then((res)=>{
       this.$store.commit('category/getCategoryList',res)
+    }),
+    getProjectApi().then((res)=>{
+      this.$store.commit('project/getProjectList',res)
     })
     // userGet().then((res) => {
     //     let userList=[]
@@ -395,7 +421,7 @@ export default {
       if(this.ip_info.private_project){
         this.ip_info.category=""
       }else{
-        this.ip_info.category="Soc module"
+        this.ip_info.category="SoC系统组件"
       }
     },
     getChoices(id) {
@@ -408,12 +434,6 @@ export default {
       }
     },
     submitNewIp(){
-      // console.log("this.ipDes",this.ipDes.getText(0))
-      // if(this.ipDes.getText(0)){
-      //   this.ip_info.description=null
-      // }else{
-      //   this.ip_info.description=this.ipDes.getText(0)
-      // }
       this.$refs.form.validate((valid) => {
         if (valid) {
           // 表单验证通过，执行提交操作
@@ -424,13 +444,44 @@ export default {
             this.see_permission.push(localStorage.getItem('user'))
           }
           this.ip_info.see_permission = this.see_permission.join()
+          if(this.ip_info.private_project){
+            this.project_list.filter(it=>{
+                if(it.project_uuid == this.ip_info.project){
+                  if(it.has_ip){
+                    it.has_ip =it.has_ip+","+this.ip_info.ip_uuid
+                  }else{
+                    it.has_ip = this.ip_info.ip_uuid
+                  }
+                }
+                editProjectApi(it.project_uuid,it)
+              })
+          }else{
+            this.ip_info.project = this.value.join(',')
+            //value 是 project_uuid
+            this.value.forEach(item=>{
+              this.project_list.filter(it=>{
+                if(it.project_uuid == item){
+                  if(it.has_ip){
+                    it.has_ip =it.has_ip+","+this.ip_info.ip_uuid
+                  }else{
+                    it.has_ip = this.ip_info.ip_uuid
+                  }
+                }
+                editProjectApi(it.project_uuid,it)
+              })
+            })
+          }
           this.addNewIP(this.ip_info);
           getCategoryListApi(this.ip_info.category).then(async (res)=>{        
             await this.$store.commit('IP/getCategoryIpList',res)
           })
+          getProjectListApi(this.ip_info.category).then(async (res)=>{
+            await this.$store.commit('IP/getProjectIpList',res)
+          })
           this.$router.push({
             path: "/ecommerce/Orders/order-list",
             name: "Order List",
+            params:{source:"newProject"}
           })
           this.$message.success('添加成功')
         } else {

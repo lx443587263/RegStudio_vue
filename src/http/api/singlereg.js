@@ -26,7 +26,6 @@ export const editSingle=(uuid,data)=>{
 
 //增
 export const addSingle=(data)=>{
-    console.log(data)
     return serviceAxios({
         url: "/ip/singleReg/",
         method: "post",

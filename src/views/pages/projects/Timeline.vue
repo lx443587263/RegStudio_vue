@@ -37,6 +37,8 @@ export default {
     getModifyDataApi().then((res)=>{
       for(var i in res){
         if(res[i]["modify_model"]==="RegGather"){
+          console.log(JSON.parse(res[i].modify_content)['ip_uuid'])
+          console.log(this.$store.state.IP.current_ip_uuid)
           if(JSON.parse(res[i].modify_content)['ip_uuid']===this.$store.state.IP.current_ip_uuid){
             // this.modify_list.push({"user":res[i].user,"data":res[i].data,"former_content":JSON.parse(res[i].former_content),"modify_content":JSON.parse(res[i].modify_content)})
             this.compareObjects(res[i].user,res[i].data,JSON.parse(res[i].former_content),JSON.parse(res[i].modify_content),res[i].modify_model,"primary")

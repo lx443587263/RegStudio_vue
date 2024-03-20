@@ -14,13 +14,18 @@ const IP={
                 create_user:"",
                 version:"",
                 category:"",
+                project:"",
                 tags:"",
                 see_permission:"",
                 child_version:"",
             },
             ip_lists:[],
             category_ip:[],
+            project_ip:[],
+            final_ip:[],
+            all_ip:[],
             allCategoryListVuex:[],
+            allProjectListVuex:[],
             res:{},
             current_ip_uuid:"",
         }
@@ -31,14 +36,32 @@ const IP={
         }
     },
     mutations: {
+        getAllIP(state){
+            state.final_ip = state.all_ip
+        },
+        getProjectIP(state,version){
+            if(state.project_ip.length==1){
+                state.final_ip = state.project_ip
+            }else{
+                // let maxVersion =  state.project_ip.reduce((prev,current)=>(prev.version > current.version)?prev.version:current.version)
+                state.final_ip = state.project_ip.filter(obj=>obj.child_version==version.charAt(version.length-1))
+            }
+        },
         getIpList:function(state,list){
             state.ip_lists = list;
+        },
+        setFinalIPList:function(state,list){
+            state.final_ip = list;
         },
         setCurrentIpUuid(state,ip_uuid){
             state.current_ip_uuid = ip_uuid
         },
         allCategoryList(state,list){
             state.allCategoryListVuex = list;
+        },
+        allProjectList(state,list){
+            state.allProjectListVuex = list
+
         },
         getCategoryIpList(state,list){
             if(localStorage.getItem('user')!='admin'){
@@ -53,6 +76,29 @@ const IP={
             }else{
                 state.category_ip = list;
             }
+            state.final_ip = state.category_ip;
+        },
+        getProjectIpList(state,list){
+            if(localStorage.getItem('user')!='admin'){
+                state.project_ip = []
+                for(var i in list){
+                    if(list[i].see_permission){
+                        if(list[i].see_permission.indexOf(localStorage.getItem('user'))!=-1){
+                            state.project_ip.push(list[i])
+                        }
+                    }
+                }
+            }else{
+                state.project_ip = list;
+            }
+            state.all_ip = state.project_ip;
+            state.final_ip = state.project_ip
+            // if(state.project_ip.length==1){
+            //     state.final_ip = state.project_ip
+            // }else{
+            //     let maxVersion =  state.project_ip.reduce((prev,current)=>(prev.version > current.version)?prev.version:current.version)
+            //     state.final_ip = state.project_ip.filter(obj=>obj.version==maxVersion)
+            // }
         },
         deleteAllCategoryList(state,data){
             const index = state.allCategoryListVuex.findIndex((item) => item.category === data.category); // 查找元素在数组中的位置
@@ -76,21 +122,25 @@ const IP={
             state.ip_info.create_user = ip_info.create_user;
             state.ip_info.version = ip_info.version;
             state.ip_info.category = ip_info.category;
+            state.ip_info.project = ip_info.project;
             state.ip_info.tags = ip_info.tags;
             state.ip_info.see_permission = ip_info.see_permission;
             state.ip_info.child_version = ip_info.child_version;
             if(!state.ip_info.see_permission){
                 state.ip_info.see_permission = "admin"
             }
+            
             //发送数据到后端
             await addIp(state.ip_info).then((res)=>{
-                // console.log("state.ip_info",state.ip_info)
                 if("error" in res)
                 {
                     alert(res["error"]);
                 }else{
                     state.ip_lists.unshift(ip_info);
                     state.category_ip.push(ip_info);
+                    state.project_ip.push(ip_info);
+                    // state.final_ip = state.ip_lists;
+                    // console.log("store",state.final_ip)
                     const findCate = state.allCategoryListVuex.findIndex((item)=>item.category===state.ip_info.category)
                     if(findCate===-1){
                         let tempObj={}

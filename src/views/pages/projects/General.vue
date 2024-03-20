@@ -667,11 +667,8 @@ export default {
                         tempSingleReg.push(temp)
                     }
                 }
-                console.log(tempSingleReg)
                 row.singleReg = tempSingleReg
 
-                console.log(tableEditInfo.row)
-                console.log(typeof(row.reg_gather_uuid))
                 await $table.setEditCell(row,"reg_gather_name")
                 await $table.isEditByRow(row)
                 if (tableData.value.length !== 0) {

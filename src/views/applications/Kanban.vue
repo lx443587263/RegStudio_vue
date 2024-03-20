@@ -148,7 +148,6 @@ export default {
       }
     },
     AddCategory(){
-      console.log(this.cataegoryData)
       this.$refs.form.validate(valid => {
         if (valid) {
           const newRow = { category: this.cataegoryData.category }
@@ -156,7 +155,6 @@ export default {
           addCategoryApi(this.cataegoryData).then((res)=>{
             if("error" in res)
             {
-              console.log(res)
               this.$message.error(res["error"]);
             }else{
               this.category_list.push(newRow)
@@ -179,7 +177,6 @@ export default {
       this.dialogEditVisible = true
     },
     editCategoryData(){
-      console.log(this.editData)
       editCategoryApi(this.editData.category,this.editData)
       this.$message.success('修改成功')
       this.dialogEditVisible = false

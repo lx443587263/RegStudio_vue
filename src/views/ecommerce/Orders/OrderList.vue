@@ -6,7 +6,8 @@
           <argon-button v-permission="['admin','edit','create','delete','read']" color="white" variant="outline"><el-icon><Plus /></el-icon> 新建IP</argon-button>
         </router-link>
         <argon-button v-permission="['admin','edit','create','delete','read']" color="white" variant="outline" @click="deleteIpAll"><el-icon><Delete /></el-icon> 删除IP</argon-button>
-        <argon-button v-permission="['admin','edit','create','delete','read']" color="white" variant="outline" @click="createNewVersion">新建新版本</argon-button>
+        <argon-button v-if="$route.params.source == 'project'" v-permission="['admin','edit','create','delete','read']" color="white" variant="outline" @click="ipChangeVisible = true">芯片改版IP升级</argon-button>
+        <argon-button v-else v-permission="['admin','edit','create','delete','read']" color="white" variant="outline" @click="createNewVersion">新建Ip分支</argon-button>
         <argon-button v-permission="['admin','edit','create','delete','read']" color="white" variant="outline" @click="dialogVisible = true">导入IP</argon-button>
         <!-- <argon-button v-permission="['admin',]" color="white" variant="outline" @click="importIP">test</argon-button> -->
         <!-- <input id="doc" class="file" type="file"/> -->
@@ -46,8 +47,33 @@
             </template >
           </el-upload>
         </el-dialog>
+        <el-dialog  v-model="ipChangeVisible" title="ip改版">
+          <span class="dialog-footer">
+            <p>目标项目</p>
+            <div :style="{ color: 'red' }">
+              注:IP研发不用勾选项目,请从ip视图进入,芯片项目请勾选指定项目
+            </div>
+            <div style=" margin-top: 10px;padding-bottom: 10px;">
+              <el-select v-if="$route.params.source =='project'" v-model="destination" filterable placeholder="请选择目标项目">
+              <el-option v-for="(item,index) in project_list.filter(item=>item.project == ($route.params.version.substring(0,$route.params.version.length-1)))" :key="index" :label="item.project+item.version" :value="item.project_uuid">
+                {{ item.project+item.version }}
+              </el-option>
+              </el-select>
+              <!-- <el-select v-else v-model="destination" filterable placeholder="请选择目标项目">
+              <el-option v-for="(item,index) in project_list" :key="index" :label="item.project+item.version" :value="item.project_uuid">
+                {{ item.project+item.version }}
+              </el-option>
+              </el-select> -->
+            </div>
+            <el-button @click="ipChangeVisible = false">取 消</el-button>
+            <el-button type="primary" @click="createNewVersion">确 定</el-button>
+          </span>
+        </el-dialog>
+
       </div>
+
       <div class="d-flex">
+
         <!-- <div class="dropdown d-inline">
           <argon-button
             id="navbarDropdownMenuLink2"
@@ -109,6 +135,9 @@
           </el-select>
           <el-button :disabled="isIpPageCDefineDisabled" type="primary" style="margin-left: 10px;padding: 10px;" @click="exportCDefine" >导出</el-button>
           <!-- <div id="bodyContainer"></div> -->
+          <div>
+            <el-button type="primary" style="margin-top: 10px;padding: 10px;" @click="exportTestDefine" >导出reset数组</el-button>
+          </div>
         </el-dialog>
         <argon-button
           class="btn-icon ms-2 export"
@@ -182,15 +211,26 @@
         </el-dialog>
       </div>
     </div>
+    <div v-if="$route.params.source == 'project'" style="margin-top: 10px;">
+      <input v-permission="['admin','edit','create','delete','read']" type="checkbox" v-model="showAll"/>
+          <label class="form-check-label" for="flexCheckDefault">
+            显示所有类型IP
+          </label>
+    </div>
     <div class="row">
       <div class="col-12">
         <div class="card mt-4">
           <div class="container-fluid">
+            <div style="margin-top: 10px;">
+              <p>
+                <vxe-input v-model="filterName" type="search" placeholder="试试全表搜索" @keyup="searchEvent()"></vxe-input>
+              </p>
+            </div>
             <el-table
               ref="multipleTableRef"
-              :key="category_ip"
+              :key="showData"
               class="table table-flush "
-              :data="category_ip"
+              :data="showData"
               max-height="658px"
               style="width: 100%"
               empty-text = ""
@@ -227,6 +267,14 @@
                     </argon-button> -->
                     <span>{{ scope.row[col.prop] }}</span>
                   </div>
+                  <!--project项目名称拼接显示-->
+                  <div v-else-if="col.prop==='project'" class="d-flex align-items-center">
+                    <div v-if="scope.row[col.prop]!=null">
+                      <el-tag v-for="item in scope.row[col.prop].split(',')" :key="item" class="mx-1">
+                        {{ projectKV.get(item)}}
+                      </el-tag>
+                    </div>
+                  </div>
                   <div v-else>
                     {{ scope.row[col.prop] }}
                   </div>
@@ -259,15 +307,36 @@
                 <el-form-item label="Version" :label-width="formLabelWidth">
                   <el-input v-model="editData.version" autocomplete="off" />
                 </el-form-item>
-                <el-form-item label="Child Version" :label-width="formLabelWidth">
+                <el-form-item label="Chip Version" :label-width="formLabelWidth">
                   <el-input v-model="editData.child_version" autocomplete="off" />
                 </el-form-item>
-                <el-form-item label="Child Category" :label-width="formLabelWidth">
+                <el-form-item label="Category" :label-width="formLabelWidth">
                   <el-select v-model="editData.category" style="width: 100%">
                   <!-- <el-option label="Interface" value="Interface" /> -->
                   <el-option v-for="(item,index) in category_list" :key="index" :label=item.category :value=item.category></el-option>
                 </el-select>
                 </el-form-item>
+                
+                <!-- <el-form-item v-if="ip_info.private_project" label="Porject" prop="project">
+                  <el-select v-model="ip_info.project" placeholder="please select Project" style="width: 100%">
+                      <el-option v-for="(item,index) in project_list" :key="index" :label=item.project :value=item.project></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item v-else label="Porject" prop="project">
+                  <MultipleSelect v-model="value" :options="options"></MultipleSelect>
+                </el-form-item> -->
+
+
+                <el-form-item v-if="editData.private_project" label="Project" :label-width="formLabelWidth">
+                  <el-select v-model="editData.project" style="width: 100%">
+                  <!-- <el-option label="Interface" value="Interface" /> -->
+                  <el-option v-for="(item,index) in project_list" :key="index" :label=item.project+item.version :value=item.project_uuid></el-option>
+                </el-select>
+                </el-form-item>
+                <el-form-item v-else label="Project" :label-width="formLabelWidth">
+                  <MultipleSelect v-model="value" :options="options"></MultipleSelect>
+                </el-form-item>
+
                 <el-form-item label="Description" :label-width="formLabelWidth">
                   <el-input v-model="editData.description" autocomplete="off" />
                 </el-form-item>
@@ -328,9 +397,13 @@
 // import { DataTable } from "simple-datatables";
 import {onMounted,onUnmounted} from "vue";
 import ArgonButton from "@/components/ArgonButton.vue";
+// import ArgonCheckbox from "@/components/ArgonCheckbox.vue"
 import { mapState } from 'vuex';
 import { getIpListApi,deleteIp,getIpPageFileApi,perviewIpPageFileApi} from "@/http/api/ip"
 import { getCategoryApi } from "@/http/api/category"
+import { getProjectApi,editProjectApi,getProjecNameApi} from "@/http/api/project"
+import { addProjectChangeApi } from "@/http/api/projectchange"
+
 import { getRegGatherList } from "@/http/api/reggather"
 import { editIpVersion } from '@/http/api/ip';
 import { v4 as uuidv4 } from 'uuid';
@@ -344,14 +417,16 @@ import {getTemplateFileApi} from "@/http/api/template_file";
 import { ElMessage } from 'element-plus';
 import { renderAsync } from "docx-preview";
 import ExcelJS from "exceljs";
-import { getCategoryListApi } from "../../../http/api/ip";
+import { getCategoryListApi} from "@/http/api/ip";
 import { getmark } from "@/util/watermark";
+import MultipleSelect from "@/views/pages/projects/components/MultipleSelect.vue"
+
 
 export default {
   name: "OrderList",
   components: {
     ArgonButton,
-    // ArgonCheckbox,
+    MultipleSelect
   },
 
   setup(){
@@ -373,17 +448,20 @@ export default {
         }
         const { watermark } = getmark();
         onMounted(() => {
-            watermark(localStorage.getItem("user"),getdateTime());//水印名
+          watermark(localStorage.getItem("user"),getdateTime());//水印名
         });
 
         onUnmounted(() => {
             watermark("","");
         });
+
   },
 
 
   data() {
     return { 
+      destination:"",
+      showData:[],
       current_user:localStorage.getItem('user'),
       bankendServeIP:localStorage.getItem("backendIp")+"ip/upload_file/",
       reg_gather_list:[],
@@ -391,14 +469,15 @@ export default {
       selList:[],
       userData:[],
       columnList: [
-        { prop: "ip_name", label: 'IpName' },
-        { prop: "version", label: 'Version/Chip',width:'130px' },
+      { prop: "project", label: 'Project'},
+        { prop: "ip_name", label: 'IPName' },
+        { prop: "version", label: 'RTL Ver',width:'100px' },
         // { prop: "start_date",label:'StartDate' },
-        { prop: "status", label: 'Status' },
-        { prop: "description", label: 'Description' },
+        { prop: "status", label: 'Status' ,width:'100px'},
         { prop: "create_user", label: 'CreateUser' },
         { prop: "category", label: 'Category',width:'100px' },
-        { prop: "child_version", label: 'Child Version',width:'120px' },
+        { prop: "description", label: 'Description' },
+        { prop: "child_version", label: 'Chip Version',width:'120px' },
         { prop: "tags", label: 'Tags' },
       ],
       CDefineList:[
@@ -411,6 +490,8 @@ export default {
       inputVisible: false,
       inputValue: '',
       dialogVisible: false,
+      ipChangeVisible:false,
+      showAll: true,
       dialogFormVisible:false,
       dialogPermissionVisible: false,
       exportDialogVisible:false,
@@ -421,11 +502,14 @@ export default {
       editData:{},
       currentRowIndex:"",
       oldCategory:"",
+      oldProject:"",
       oldVersion:"",
       oldChildVersion:"",
       uploadData: {
         ip_uuid: "",
       },
+      search_list:[],
+      filterName:"",
       file_uuid:"",
       ip_page_file_uuid:"",
       start_addr:"",
@@ -450,6 +534,7 @@ export default {
         showChanges: false, // boolean：启用文档更改的实验性渲染（插入/删除）
         debug: false, // boolean：启用额外的日志记录
       },
+      allProjectList_temp:[],
       PerviewDisable:false,
       checkAll:false,
       isIndeterminate:true,
@@ -467,7 +552,7 @@ export default {
         9: "0X1FF",
         10: "0x3FF",
         11: "0x7FF",
-        12: "0xFF",
+        12: "0xFFF",
         13: "0X1FFF",
         14: "0X3FFF",
         15: "0X7FFF",
@@ -488,17 +573,27 @@ export default {
         30: "0x3FFFFFFF",
         31: "0x7FFFFFFF",
         32: "0XFFFFFFFF",
-      }
+      },
+      value:[],
+      options: [],
+      projectKV:new Map(),
     }
   },
 
   //关联vuex获取数据
   computed:{
+    ...mapState('IP',['final_ip']),
     ...mapState('IP',['category_ip']),
     ...mapState('IP',['ip_lists']),
+    ...mapState('IP',['all_ip']),
     ...mapState('template_file',['template_file_list']),
     ...mapState('user',['userlist']),
     ...mapState('category',['category_list']),
+    ...mapState('project',['project_list']),
+    // ...mapState('project',['projectKV']),
+    ...mapState('IP',['allCategoryListVuex']),
+    ...mapState('IP',['allProjectListVuex']),
+    ...mapState('IP',['getAllIP']),
     isDisabled() {
       return this.condition; // 根据条件动态返回禁用状态
     },
@@ -518,6 +613,11 @@ export default {
   },
 
   watch:{
+    "$store.state.IP.final_ip"(newValue){
+      if(newValue){
+        this.showData = newValue
+      }
+    },
     'uploadData.ip_uuid'(newValue){
       if(newValue){
         this.condition=false
@@ -543,14 +643,55 @@ export default {
         this.exportConditionExcelDefinePage=false
       }
     },
+    'showAll':{
+      handler:function(newValue){
+        if(this.$route.params.source == "project"&&this.$route.params.version.charAt(this.$route.params.version.length-1).toLowerCase()!="a"){
+          if(newValue){
+            this.$store.commit('IP/getAllIP')
+          }else{
+            this.$store.commit('IP/getProjectIP',this.$route.params.version)
+          }
+        }
+       },
+    }
+    // 'showAll'(newValue){
+    //   if(this.$route.params.source == "project"){
+    //     if(newValue){
+    //       this.$store.commit('IP/getAllIP')
+    //     }else{
+    //       this.$store.commit('IP/getProjectIP',this.$route.params.version)
+    //     }
+    //   }
+    // }
   },
 
   created(){
+    getIpListApi().then((res)=>{
+        this.$store.commit('IP/getIpList',res)
+        this.showData = this.final_ip
+    })
     this.generateData()
     getCategoryApi().then((res)=>{
       this.$store.commit('category/getCategoryList',res)
-    })
-  //   window.addEventListener('beforeunload', () => {
+    }),
+    getProjectApi().then((res)=>{
+      this.$store.commit('project/getProjectList',res)
+    }),
+    this.project_list.forEach(element => {
+      let temp={};
+      temp.value=element.project_uuid
+      temp.label=element.project+element.version
+      this.options.push(temp)
+    });
+    if(this.$route.params.source == "project" && this.$route.params.version.charAt(this.$route.params.version.length-1).toLowerCase()!="a"){
+        this.$store.commit('IP/getProjectIP',this.$route.params.version)
+    }
+    if(this.$route.params.source == "newProject"){
+      console.log(this.ip_lists)
+    }
+    this.projectKV = new Map(JSON.parse(localStorage.projectMap));
+
+    //   window.addEventListener('beforeunload', () => {
   //     sessionStorage.setItem('list', JSON.stringify(this.$store.state))
   //   })
   //   try {
@@ -616,14 +757,53 @@ export default {
 
     //跳转进入寄存器集合
     entryRegGather(row){
-      this.$store.commit('IP/setCurrentIpUuid',row.ip_uuid)
-      this.$router.push({
-        path:'/pages/projects/general',
-        name: "General",
-        params:{
-          ip_uuid:row.ip_uuid
-        },
-      })
+      if (!row.private_project) {
+        if (row.project) {
+          let tempPro = row.project.split(',')
+          let str = ""
+          tempPro.forEach(item=>{
+            str = str+" "+ this.projectKV.get(item)
+          })
+          this.$confirm('此操作将影响' + str+ '等项目, 是否继续?', '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }).then(() => {
+            this.$store.commit('IP/setCurrentIpUuid', row.ip_uuid)
+            this.$router.push({
+              path: '/pages/projects/general',
+              name: "General",
+              params: {
+                ip_uuid: row.ip_uuid
+              },
+            })
+          }).catch(() => {
+            this.$message({
+              type: 'info',
+              message: '已取消编辑'
+            });
+          });
+        } else {
+          this.$store.commit('IP/setCurrentIpUuid', row.ip_uuid)
+          this.$router.push({
+            path: '/pages/projects/general',
+            name: "General",
+            params: {
+              ip_uuid: row.ip_uuid
+            },
+          })
+        }
+
+      } else {
+        this.$store.commit('IP/setCurrentIpUuid', row.ip_uuid)
+        this.$router.push({
+          path: '/pages/projects/general',
+          name: "General",
+          params: {
+            ip_uuid: row.ip_uuid
+          },
+        })
+      }
     },
 
     handleSelectionChange(selVal){
@@ -634,11 +814,52 @@ export default {
 
     },
 
+    //搜索数据
+    searchEvent(){
+        this.showData = this.final_ip.filter((data) => {
+          return Object.keys(data).some((key) => {
+        //2023.03.10修改，这里的一段代码并不需要，只在tableData2中检索就可以达到模糊查询
+              return String(data[key]).toLowerCase().indexOf(this.filterName.toLowerCase()) > -1
+          })
+        })
+    },
+
+    async getCategoryList (list){
+      if(list){
+        let tempAllCategoryList = []
+        let allCategoryList_temp = []
+        for(var item in list){
+          if(list[item].category){
+            let ipCategory = {}
+            ipCategory.category=list[item].category
+            ipCategory.versionList = []
+            let tempVersionList = []
+            getCategoryListApi(list[item].category).then((res)=>{
+              for(var i in res){
+                let temp = {}
+                temp.ipName = res[i].ip_name
+                temp.seePermission = res[i].see_permission
+                const findIpName = tempVersionList.findIndex(i=>i.ipName === temp.ipName)
+                if(findIpName == -1){
+                  tempVersionList.push(temp)
+                }
+              }
+              ipCategory.versionList = tempVersionList;
+            })
+
+            tempAllCategoryList.push(ipCategory)
+          }
+        }
+        allCategoryList_temp = tempAllCategoryList.filter((item, index) => tempAllCategoryList.findIndex(i => i.category === item.category) === index);
+        await this.$store.commit('IP/allCategoryList',allCategoryList_temp)
+      }
+    },
+
     // 删除选中的数据
     async deleteIpAll(){
       for(var i in this.selList){
         deleteIp(this.selList[i].ip_uuid)
-        if(this.category_ip.length==1){
+        if(this.final_ip.length==1){
           // console.log("this.selList[i]",this.selList[i].ip_name)
           let tempObj = {}
           tempObj.category = this.selList[i].category
@@ -650,15 +871,38 @@ export default {
             name: "All Projects"
           })
         }
-        const index = this.category_ip.findIndex((item) => item.ip_uuid === this.selList[i].ip_uuid);
+        const index = this.final_ip.findIndex((item) => item.ip_uuid === this.selList[i].ip_uuid);
+        if(this.selList[i].project){
+          //soc项目
+          if(this.selList[i].private_project){
+            this.project_list.filter(k=>{
+              if(k.project_uuid == this.selList[i].project){
+                const index = k.has_ip.split(',').findIndex(h=>h==this.selList[i].ip_uuid)
+                let temp = k.has_ip.split(',').splice(index,1)
+                k.has_ip = temp.join(',')
+              }
+            })
+          }else{
+            this.selList[i].project.split(',').forEach(g=>{
+              const proIndex = this.project_list.findIndex(v=>v.project_uuid == g)
+              if(proIndex!=-1){
+                const tempIndex = this.project_list[proIndex].has_ip.split(",").findIndex(m=>m==this.selList[i].ip_uuid)
+                let tempList =this.project_list[proIndex].has_ip.split(",").splice(tempIndex,1)
+                this.project_list[proIndex].has_ip = tempList.join(',')
+              }
+            })
+          }
+        }
         if (index !== -1) {
-          this.category_ip.splice(index, 1);
+          this.final_ip.splice(index, 1);
+          this.showData = this.final_ip
         }
       }
       await getIpListApi().then((res)=>{
         this.$store.commit('IP/getIpList',res)
+        this.getCategoryList(res)
       })
-      // await getCategoryIP().then((res)=>{
+      // await getCategoryApi().then((res)=>{
       //   this.$store.commit('IP/getCategoryIpList',res)
       // })
     },
@@ -744,10 +988,21 @@ export default {
     
     
     editRow(row,index){
+      this.value = []
       this.oldCategory = row.category
+      // console.log(      
+      //   this.project_list.filter(item=>{
+      //   return item.project_uuid == row.project
+      // }))
+      this.oldProject = row.project
       this.oldVersion  = row.version
       this.oldChildVersion = row.child_version
       this.editData = {...row}
+      if(!row.private_project){
+        if(row.project){
+          this.value = row.project.split(',')
+        }
+      }
       if(this.editData.tags){
         this.dynamicTags=this.editData.tags.split(',')
       }
@@ -760,212 +1015,568 @@ export default {
 
     //创建新的版本
     createNewVersion(){
-      for(var i in this.selList){
-        let ipInfoTemp = {}
-        let ip_uuid_temp = uuidv4()
-        let old_ip_uuid = this.selList[i]["ip_uuid"]
-        for(var k in this.selList[i]){
-          if(k!="id"){
-            if(k=="ip_uuid"){
-              ipInfoTemp[k] = ip_uuid_temp
-            }else if(k=="child_version"){
-              if(this.selList[i]["private_project"]===true){
-                if(this.selList[i][k]){
-                  let pattern = /^[a-zA-Z]+$/i;
-                  if(pattern.test(this.selList[i][k])){
-                    ipInfoTemp[k] = String.fromCharCode(this.selList[i][k].charCodeAt(0)+1)
+      if(this.selList.length!=0){
+        if(this.$route.params.source == 'project'){
+          if(this.destination){
+            for (var i in this.selList) {
+              let ipInfoTemp = {}
+              let ip_uuid_temp = uuidv4()
+              let old_ip_uuid = this.selList[i]["ip_uuid"]
+              for (var k in this.selList[i]) {
+                if (k != "id") {
+                  if (k == "ip_uuid") {
+                    ipInfoTemp[k] = ip_uuid_temp
                   }
-                }
-              }else{
-                ipInfoTemp[k] = this.selList[i][k]
-              }
-            }else if(k=="version"){
-              if(this.selList[i]["private_project"]===false){
-                if(this.selList[i][k].indexOf('v')!==-1||this.selList[i][k].indexOf('V')!==-1){
-                  ipInfoTemp[k] = "v"+(parseFloat((this.selList[i][k].match(/\d+(\.\d+)?/)[0])*10+1)/10).toString();
-                }
-              }else{
-                ipInfoTemp[k] = this.selList[i][k]
-              }
-            }else{
-              ipInfoTemp[k] = this.selList[i][k]
-            }
-          }
-        }
-        
-        getRegGatherList(old_ip_uuid).then((res)=>{
-          for(var i in res){
-            let reg_gather_uuid_temp = uuidv4()
-            let gatherObjTemp = {}
-            let old_reg_gather_uuid = res[i]["reg_gather_uuid"]
-            for(var j in res[i]){
-              if(j!="id"){
-                if(j=="ip_uuid"){
-                  gatherObjTemp[j] = ip_uuid_temp
-                }else if(j=="reg_gather_uuid"){
-                  gatherObjTemp[j] = reg_gather_uuid_temp
-                }else{
-                  gatherObjTemp[j] = res[i][j]
-                }
-              }
-            }
-            this.addReg(gatherObjTemp)
-
-            getSingleList(old_reg_gather_uuid).then((res)=>{
-              for(var b in res){
-                let single_reg_uuid_temp = uuidv4()
-                let singleObjTemp = {}
-                let old_single_reg_uuid = res[b]["single_reg_uuid"]
-                for(var y in res[b]){
-                  if(y!="id"){
-                    if(y=="reg_gather_uuid"){
-                      singleObjTemp[y] = reg_gather_uuid_temp
-                    }else if(y=="single_reg_uuid"){
-                      singleObjTemp[y] = single_reg_uuid_temp
-                    }else{
-                      singleObjTemp[y] = res[b][y]
-                    }
-                  }
-                }
-                console.log(singleObjTemp)
-                this.addSingle(singleObjTemp)
-
-                getValueList(old_single_reg_uuid).then((res)=>{
-                  for(var f in res){
-                    let value_uuid_temp = uuidv4()
-                    let valueObjTemp = {}
-                    for(var q in res[f]){
-                      if(q!="id"){
-                        if(q=="single_reg_uuid"){
-                          valueObjTemp[q] = single_reg_uuid_temp
-                        }else if(q == "value_uuid"){
-                          valueObjTemp[q] = value_uuid_temp
-                        }else{
-                          valueObjTemp[q] = res[f][q]
+                  else if (k == "child_version") {
+                    if (this.selList[i]["private_project"] === true) {
+                      if (this.selList[i][k]) {
+                        let pattern = /^[a-zA-Z]+$/i;
+                        if (pattern.test(this.selList[i][k])) {
+                          ipInfoTemp[k] = String.fromCharCode(this.selList[i][k].charCodeAt(0) + 1)
                         }
                       }
+                    } else {
+                      ipInfoTemp[k] = this.selList[i][k]
                     }
-                    this.addVal(valueObjTemp)
+                  }else if (k == "version") {
+                    if (this.selList[i]["private_project"] === false) {
+                      if (this.selList[i][k].indexOf('v') !== -1 || this.selList[i][k].indexOf('V') !== -1) {
+                        ipInfoTemp[k] = "v" + (parseFloat((this.selList[i][k].match(/\d+(\.\d+)?/)[0]) * 10 + 1) / 10).toString();
+                      }
+                    } else {
+                      ipInfoTemp[k] = this.selList[i][k]
+                    }
+                  } else {
+                    ipInfoTemp[k] = this.selList[i][k]
+                  }
+                }
+              }
+
+              getRegGatherList(old_ip_uuid).then((res) => {
+                for (var i in res) {
+                  let reg_gather_uuid_temp = uuidv4()
+                  let gatherObjTemp = {}
+                  let old_reg_gather_uuid = res[i]["reg_gather_uuid"]
+                  for (var j in res[i]) {
+                    if (j != "id") {
+                      if (j == "ip_uuid") {
+                        gatherObjTemp[j] = ip_uuid_temp
+                      } else if (j == "reg_gather_uuid") {
+                        gatherObjTemp[j] = reg_gather_uuid_temp
+                      } else {
+                        gatherObjTemp[j] = res[i][j]
+                      }
+                    }
+                  }
+                  this.addReg(gatherObjTemp)
+
+                  getSingleList(old_reg_gather_uuid).then((res) => {
+                    for (var b in res) {
+                      let single_reg_uuid_temp = uuidv4()
+                      let singleObjTemp = {}
+                      let old_single_reg_uuid = res[b]["single_reg_uuid"]
+                      for (var y in res[b]) {
+                        if (y != "id") {
+                          if (y == "reg_gather_uuid") {
+                            singleObjTemp[y] = reg_gather_uuid_temp
+                          } else if (y == "single_reg_uuid") {
+                            singleObjTemp[y] = single_reg_uuid_temp
+                          } else {
+                            singleObjTemp[y] = res[b][y]
+                          }
+                        }
+                      }
+                      this.addSingle(singleObjTemp)
+
+                      getValueList(old_single_reg_uuid).then((res) => {
+                        for (var f in res) {
+                          let value_uuid_temp = uuidv4()
+                          let valueObjTemp = {}
+                          for (var q in res[f]) {
+                            if (q != "id") {
+                              if (q == "single_reg_uuid") {
+                                valueObjTemp[q] = single_reg_uuid_temp
+                              } else if (q == "value_uuid") {
+                                valueObjTemp[q] = value_uuid_temp
+                              } else {
+                                valueObjTemp[q] = res[f][q]
+                              }
+                            }
+                          }
+                          this.addVal(valueObjTemp)
+                        }
+                      })
+                    }
+                  })
+                }
+              })
+              // if (ipInfoTemp.project) {
+              //   //soc
+              //   if (ipInfoTemp.private_project) {
+              //     if (this.destination) {
+              //       this.project_list.filter(it => {
+              //         if (it.project_uuid == this.destination) {
+              //           it.has_ip = it.has_ip + "," + ipInfoTemp.ip_uuid
+              //         }
+              //         editProjectApi(it.project_uuid, it)
+              //       })
+              //     }
+              //   } else {
+              //     ipInfoTemp.project = null
+              //   }
+              // }
+
+              ipInfoTemp.project = this.destination
+              this.project_list.filter(it => {
+                if (it.project_uuid == this.destination) {
+                  if(it.has_ip){
+                    it.has_ip = it.has_ip + "," + ipInfoTemp.ip_uuid
+                  }else{
+                    it.has_ip = ipInfoTemp.ip_uuid
+                  }
+                }
+                editProjectApi(it.project_uuid, it)
+              })
+              let tempData = {}
+              tempData.source_project_uuid = this.selList[i].project
+              tempData.des_project_uuid = ipInfoTemp.project
+              
+              if(this.selList[i].private_project){
+                tempData.source_project = this.projectKV.get(this.selList[i].project)
+                tempData.des_project = this.projectKV.get(ipInfoTemp.project)
+              }
+              else{
+                let tempSocStrList = []
+                let tempDesStrList = []
+                this.selList[i].project.split(',').forEach(item=>{
+                  tempSocStrList.push(this.projectKV.get(item))
+                })
+                tempData.source_project = tempSocStrList.join(',')
+                ipInfoTemp.project.split(',').forEach(it=>{
+                  tempDesStrList.push(this.projectKV.get(it))
+                })
+                tempData.des_project = tempDesStrList.join(',')
+              }
+              tempData.edit_user = this.current_user
+              this.addNewIP(ipInfoTemp);
+              if(ipInfoTemp.child_version){
+                tempData.operate_ip_name = ipInfoTemp.ip_name+"("+ipInfoTemp.version+ipInfoTemp.child_version+")"
+              }else{
+                tempData.operate_ip_name = ipInfoTemp.ip_name+ipInfoTemp.version
+              }
+              tempData.data =  this.getdateTime()
+              console.log(tempData)
+              addProjectChangeApi(tempData)
+              this.$refs.multipleTableRef.clearSelection()
+              this.selList = []
+              this.ipChangeVisible = false
+            }
+          }else{
+            this.$message.error('请选择目标版本');
+          }
+        }else{
+          for (var ii in this.selList) {
+              let ipInfoTemp = {}
+              let ip_uuid_temp = uuidv4()
+              let old_ip_uuid = this.selList[ii]["ip_uuid"]
+              for (var kk in this.selList[ii]) {
+                if (kk != "id") {
+                  if (kk == "ip_uuid") {
+                    ipInfoTemp[kk] = ip_uuid_temp
+                  }
+                  else if (kk == "child_version") {
+                    if (this.selList[ii]["private_project"] === true) {
+                      if (this.selList[ii][kk]) {
+                        let pattern = /^[a-zA-Z]+$/i;
+                        if (pattern.test(this.selList[ii][kk])) {
+                          ipInfoTemp[kk] = String.fromCharCode(this.selList[ii][kk].charCodeAt(0) + 1)
+                        }
+                      }
+                    } else {
+                      ipInfoTemp[kk] = this.selList[ii][kk]
+                    }
+                  }
+                  else if (kk == "version") {
+                    if (this.selList[ii]["private_project"] === false) {
+                      if (this.selList[ii][kk].indexOf('v') !== -1 || this.selList[ii][kk].indexOf('V') !== -1) {
+                        ipInfoTemp[kk] = "v" + (parseFloat((this.selList[ii][kk].match(/\d+(\.\d+)?/)[0]) * 10 + 1) / 10).toString();
+                      }
+                    } else {
+                      ipInfoTemp[kk] = this.selList[ii][kk]
+                    }
+                  } else {
+                    ipInfoTemp[kk] = this.selList[ii][kk]
+                  }
+                }
+              }
+
+              getRegGatherList(old_ip_uuid).then((res) => {
+                for (var i in res) {
+                  let reg_gather_uuid_temp = uuidv4()
+                  let gatherObjTemp = {}
+                  let old_reg_gather_uuid = res[i]["reg_gather_uuid"]
+                  for (var j in res[i]) {
+                    if (j != "id") {
+                      if (j == "ip_uuid") {
+                        gatherObjTemp[j] = ip_uuid_temp
+                      } else if (j == "reg_gather_uuid") {
+                        gatherObjTemp[j] = reg_gather_uuid_temp
+                      } else {
+                        gatherObjTemp[j] = res[i][j]
+                      }
+                    }
+                  }
+                  this.addReg(gatherObjTemp)
+
+                  getSingleList(old_reg_gather_uuid).then((res) => {
+                    for (var b in res) {
+                      let single_reg_uuid_temp = uuidv4()
+                      let singleObjTemp = {}
+                      let old_single_reg_uuid = res[b]["single_reg_uuid"]
+                      for (var y in res[b]) {
+                        if (y != "id") {
+                          if (y == "reg_gather_uuid") {
+                            singleObjTemp[y] = reg_gather_uuid_temp
+                          } else if (y == "single_reg_uuid") {
+                            singleObjTemp[y] = single_reg_uuid_temp
+                          } else {
+                            singleObjTemp[y] = res[b][y]
+                          }
+                        }
+                      }
+                      this.addSingle(singleObjTemp)
+
+                      getValueList(old_single_reg_uuid).then((res) => {
+                        for (var f in res) {
+                          let value_uuid_temp = uuidv4()
+                          let valueObjTemp = {}
+                          for (var q in res[f]) {
+                            if (q != "id") {
+                              if (q == "single_reg_uuid") {
+                                valueObjTemp[q] = single_reg_uuid_temp
+                              } else if (q == "value_uuid") {
+                                valueObjTemp[q] = value_uuid_temp
+                              } else {
+                                valueObjTemp[q] = res[f][q]
+                              }
+                            }
+                          }
+                          this.addVal(valueObjTemp)
+                        }
+                      })
+                    }
+                  })
+                }
+              })
+              console.log(ipInfoTemp)
+              if (ipInfoTemp.project) {
+                //soc
+                if (ipInfoTemp.private_project) {
+                  if (this.destination) {
+                    this.project_list.filter(it => {
+                      if (it.project_uuid == this.destination) {
+                        it.has_ip = it.has_ip + "," + ipInfoTemp.ip_uuid
+                      }
+                      editProjectApi(it.project_uuid, it)
+                    })
+                  }
+                } else {
+                  ipInfoTemp.project = null
+                }
+              }
+              if(ipInfoTemp.private_project){
+                ipInfoTemp.project = null
+              }else{
+                ipInfoTemp.project = null
+              }
+              let tempData = {}
+              tempData.source_project_uuid = this.selList[ii].project
+              tempData.des_project_uuid = null
+              tempData.des_project = null
+
+              if(this.selList[ii].private_project){
+                tempData.source_project = this.projectKV.get(this.selList[ii].project)
+              }
+              else{
+                let tempSocStrList = []
+                if(this.selList[ii].project){
+                  this.selList[ii].project.split(',').forEach(item=>{
+                    tempSocStrList.push(this.projectKV.get(item))
+                  })
+                  tempData.source_project = tempSocStrList.join(',')
+                }else{
+                  tempData.source_project = null
+                  tempData.source_project_uuid = null
+                }
+              }
+              tempData.edit_user = this.current_user
+ 
+              this.addNewIP(ipInfoTemp);
+              if(ipInfoTemp.child_version){
+                tempData.operate_ip_name = ipInfoTemp.ip_name+"("+ipInfoTemp.version+ipInfoTemp.child_version+")"
+              }else{
+                tempData.operate_ip_name = ipInfoTemp.ip_name+ipInfoTemp.version
+              }
+              tempData.data =  this.getdateTime()
+              addProjectChangeApi(tempData)
+              this.$refs.multipleTableRef.clearSelection()
+              this.selList = []
+              this.ipChangeVisible = false
+            }
+        }
+      }else{
+        this.$message.error('请选择ip');
+      }
+    },
+
+    //获取项目列表
+    getProjecVersionList(){
+      let test = []
+      this.allProjectList_temp = [...new Set(this.allProjectList_temp)];
+      this.allProjectList_temp.forEach(element=>{
+        let temp = {}
+        temp.project = element
+        temp.versionList = []
+        getProjecNameApi(element).then((re)=>{
+          re.forEach(el=>{
+            let tempObj = {projectName:el.project+el.version,project_uuid:el.project_uuid}
+            temp.versionList.push(tempObj)
+          })
+        })
+        test.push(temp)
+      })
+      this.$store.commit('IP/allProjectList',test)
+    },
+
+    getProjectList (){
+      getProjectApi().then( (res)=>{
+        for(var i=0;i<res.length;++i){
+          this.allProjectList_temp.push(res[i].project)
+          this.projectKV.set(res[i].project_uuid,res[i].project+res[i].version)
+        }
+        this.getProjecVersionList()
+        this.$store.commit('project/getProjectKV',this.projectKV)
+      })
+    },
+
+
+    //修改ip
+    handleEdit(){
+      if (this.editData.version >= this.oldVersion) {
+        let tempData = {}
+        tempData.source_project_uuid = this.editData.project
+        tempData.edit_user = this.current_user
+        if (this.dynamicTags.length > 0) {
+          this.editData.tags = this.dynamicTags.join()
+        } else {
+          this.editData.tags = null
+        }
+        if (this.see_permission.length > 0) {
+          this.editData.see_permission = this.see_permission.join()
+        } else {
+          this.editData.see_permission = null
+        }
+        if (this.editData.private_project === false) {
+          let tempSocPro = [];
+
+          tempData.source_project = tempSocPro.join(',')
+          if (this.editData.project == null) {
+            this.editData.project = this.value.join(",")
+            tempData.des_project_uuid = this.editData.project
+            let tempDesList = []
+            this.value.forEach(item => {
+              this.project_list.forEach(l => {
+                if (l.project_uuid == item) {
+                  if (!l.has_ip) {
+                    l.has_ip = this.editData.ip_uuid
+                  } else {
+                    l.has_ip += "," + this.editData.ip_uuid
+                  }
+                  editProjectApi(l.project_uuid, l)
+                  this.$message.success('保存成功')
+                }
+              })
+              tempDesList.push(this.projectKV.get(item))
+            })
+            tempData.des_project = tempDesList.join(",")
+          }
+          else {
+            let tempList
+            let set1 = new Set(this.oldProject.split(',')), set2 = new Set(this.value);
+            tempList= [...this.oldProject.split(',').filter(item => set2.has(item) == false), ...this.value.filter(item => set1.has(item) == false)];
+
+            tempList.forEach(i => {
+              if (this.value.includes(i)) {
+                //添加
+                this.project_list.forEach(item => {
+                  if (item.project_uuid == i) {
+                    if (item.has_ip) {
+                      let temp = item.has_ip.split(",")
+                      temp.push(this.editData.ip_uuid)
+                      item.has_ip = temp.join(",")
+                      editProjectApi(item.project_uuid, item)
+                    } else {
+                      item.has_ip = this.editData.ip_uuid
+                      editProjectApi(item.project_uuid, item)
+                    }
+                  }
+                })
+              } else {
+                //删除
+                this.project_list.forEach(item => {
+                  if (item.project_uuid == i) {
+                    if (item.has_ip.split(',').length != 1) {
+                      item.has_ip = item.has_ip.split(',').filter(j => j != this.editData.ip_uuid).join(',')
+                      editProjectApi(item.project_uuid, item)
+                    } else {
+                      item.has_ip = null
+                      editProjectApi(item.project_uuid, item)
+                    }
+
                   }
                 })
               }
             })
+
+            if (this.value.length == 0) {
+              this.editData.project = null
+              tempData.des_project = null
+              tempData.des_project_uuid = null
+            } else {
+              this.editData.project = this.value.join(",")
+              tempData.des_project = this.editData.project
+              let tempDesList = []
+              this.value.forEach(item => {
+                tempDesList.push(this.projectKV.get(item))
+              })
+              tempData.des_project = tempDesList.join(",")
+            }
+
           }
-        })
-        this.addNewIP(ipInfoTemp);
-        this.$refs.multipleTableRef.clearSelection()
-        this.selList = []
-      }
-    },
-
-
-    //获取种类列表
-    getCategoryList(list){
-      if(list){
-        let tempAllCategoryList = []
-        let allCategoryList_temp = []
-        for(var item in list){
-          if(list[item].category){
-            let ipCategory = {}
-            ipCategory.category=list[item].category
-            ipCategory.versionList = []
-            let tempVersionList = []
-            getCategoryListApi(list[item].category).then((res)=>{
-              for(var i in res){
-                let temp = {}
-                temp.ipName = res[i].ip_name
-                temp.seePermission = res[i].see_permission
-                const findIpName = tempVersionList.findIndex(i=>i.ipName === temp.ipName)
-                if(findIpName == -1){
-                  tempVersionList.push(temp)
-                }
-              }
-              ipCategory.versionList = tempVersionList;
-            })
-
-            tempAllCategoryList.push(ipCategory)
-          }
-        }
-        allCategoryList_temp = tempAllCategoryList.filter((item, index) => tempAllCategoryList.findIndex(i => i.category === item.category) === index);
-        // allCategoryList_temp = JSON.parse(JSON.stringify(tempAllCategoryList.filter((item, index) => tempAllCategoryList.findIndex(i => i.category === item.category) === index)))
-        // localStorage.setItem('allCategoryListVuex',JSON.stringify(allCategoryList_temp))
-        this.$store.commit('IP/allCategoryList',allCategoryList_temp)
-      }
-    },
-    
-    //修改ip
-    handleEdit(){
-      // console.log(this.editData)
-      if(this.dynamicTags.length>0){
-        this.editData.tags = this.dynamicTags.join()
-      }else{
-        this.editData.tags = null
-      }
-      if(this.see_permission.length>0){
-        this.editData.see_permission = this.see_permission.join()
-      }else{
-        this.editData.see_permission = null
-      }
-      if(this.editData.private_project===false){
-        if(this.editData.version!=this.oldVersion){
-          var res =this.category_ip.some((item)=>{
-            if(item.version===this.editData.version && item.ip_name === this.editData.ip_name){
+          if (this.editData.version != this.oldVersion) {
+            var res = this.final_ip.some((item) => {
+              if (item.version === this.editData.version && item.ip_name === this.editData.ip_name) {
                 return true
               }
-          })
-          if(res){
-            alert("相同版本已存在");
-          }else{
-            editIpVersion(this.editData.ip_uuid,this.editData)
-            this.category_ip.splice(this.currentRowIndex,1,this.editData)
-            this.dialogFormVisible=false
-            this.ip_lists.splice(this.currentRowIndex,1,this.editData)
-            this.$message.success('修改成功')
-          }
-        }else{
-          editIpVersion(this.editData.ip_uuid,this.editData)
-          this.category_ip.splice(this.currentRowIndex,1,this.editData)
-          this.dialogFormVisible=false
-          this.ip_lists.splice(this.currentRowIndex,1,this.editData)
-          this.$message.success('修改成功')
-        }
-      }else{
-        if(this.editData.child_version!=this.oldChildVersion){
-          var result = this.category_ip.some((item)=>{
-            if(item.child_version===this.editData.child_version && item.ip_name === this.editData.ip_name && item.version===this.editData.version){
-              return true
+            })
+            if (res) {
+              alert("相同版本已存在");
+            } else {
+              editIpVersion(this.editData.ip_uuid, this.editData)
+              this.final_ip.splice(this.currentRowIndex, 1, this.editData)
+              this.dialogFormVisible = false
+              this.ip_lists.splice(this.currentRowIndex, 1, this.editData)
+              this.$message.success('修改成功')
             }
-          })
-          if(result){
-            alert("相同子版本已存在");
-          }else{
-            editIpVersion(this.editData.ip_uuid,this.editData)
-            this.category_ip.splice(this.currentRowIndex,1,this.editData)
-            this.dialogFormVisible=false
-            this.ip_lists.splice(this.currentRowIndex,1,this.editData)
+          } else {
+            editIpVersion(this.editData.ip_uuid, this.editData)
+            tempData.des_project_uuid = this.editData.project
+            this.final_ip.splice(this.currentRowIndex, 1, this.editData)
+            this.dialogFormVisible = false
+            this.ip_lists.splice(this.currentRowIndex, 1, this.editData)
             this.$message.success('修改成功')
           }
-        }else{
-          editIpVersion(this.editData.ip_uuid,this.editData)
-          this.category_ip.splice(this.currentRowIndex,1,this.editData)
-          this.dialogFormVisible=false
-          this.ip_lists.splice(this.currentRowIndex,1,this.editData)
-          this.$message.success('修改成功')
-        }
-      }
+          this.editData.project.split(',').forEach(item => {
+            tempSocPro.push(this.projectKV.get(item))
+          })
+        } else {
+          if(this.editData.project!=this.oldProject){
+           this.project_list.filter(g=>{
+            if(g.project_uuid==this.editData.project){
+              if(g.has_ip){
+                g.has_ip =g.has_ip+","+this.editData.ip_uuid
+              }else{
+                g.has_ip = this.editData.ip_uuid
+              }
+              editProjectApi(g.project_uuid, g)
 
-      if(this.editData.category!=this.oldCategory){
-        this.getCategoryList(this.ip_lists)
+            }
+            if(g.project_uuid==this.oldProject){
+              if (g.has_ip.split(',').length != 1) {
+                g.has_ip = g.has_ip.split(',').filter(j => j != this.editData.ip_uuid).join(',')
+              } else {
+                g.has_ip = null
+              }
+              editProjectApi(g.project_uuid, g)
+            }
+           }) 
+          }
+          tempData.source_project = this.projectKV.get(this.oldProject)
+          if (this.editData.child_version != this.oldChildVersion) {
+            var result = this.final_ip.some((item) => {
+              if (item.child_version === this.editData.child_version && item.ip_name === this.editData.ip_name && item.version === this.editData.version) {
+                return true
+              }
+            })
+            if (result) {
+              alert("相同子版本已存在");
+            } else {
+              editIpVersion(this.editData.ip_uuid, this.editData)
+              this.final_ip.splice(this.currentRowIndex, 1, this.editData)
+              this.dialogFormVisible = false
+              this.ip_lists.splice(this.currentRowIndex, 1, this.editData)
+              this.$message.success('修改成功')
+            }
+          } else {
+            tempData.des_project_uuid = this.editData.project
+            tempData.des_project = this.projectKV.get(this.editData.project)
+            editIpVersion(this.editData.ip_uuid, this.editData)
+            this.final_ip.splice(this.currentRowIndex, 1, this.editData)
+            this.dialogFormVisible = false
+            this.ip_lists.splice(this.currentRowIndex, 1, this.editData)
+            this.$message.success('修改成功')
+          }
+
+        }
+
+        if (this.editData.category != this.oldCategory) {
+          this.getCategoryList(this.ip_lists)
+        }
+        if (this.editData.project != this.oldProject) {
+          this.getProjectList()
+        }
+        getIpListApi().then(async (res) => {
+          await this.$store.commit('IP/getIpList', res);
+          this.getCategoryList(res)
+          this.getProjectList();
+        })
+        if(this.editData.child_version){
+          tempData.operate_ip_name = this.editData.ip_name+"("+this.editData.version+this.editData.child_version+")"
+        }else{
+          tempData.operate_ip_name = this.editData.ip_name+this.editData.version
+        }
+        tempData.data =  this.getdateTime()
+        addProjectChangeApi(tempData)
+        // const index = this.allCategoryListVuex.findIndex((item)=>item.category===this.editData.category)
+        // if(index===-1){
+        //   const tempObj = {category:this.editData.category,versionList:[{ipName:this.editData.ip_name,seePemission:this.editData.see_permission}]}
+        //   this.allCategoryListVuex.push(tempObj)
+        // }else{
+        //   this.allCategoryListVuex[index].versionList.push({ipName:this.editData.ip_name,seePemission:this.editData.see_permission})
+        // }
+        // console.log(this.allCategoryListVuex)
+        this.showData = this.final_ip
+      }else{
+        this.$message.error("新版本号必须大于等于旧版本号！")
       }
-      // const index = this.allCategoryListVuex.findIndex((item)=>item.category===this.editData.category)
-      // if(index===-1){
-      //   const tempObj = {category:this.editData.category,versionList:[{ipName:this.editData.ip_name,seePemission:this.editData.see_permission}]}
-      //   this.allCategoryListVuex.push(tempObj)
-      // }else{
-      //   this.allCategoryListVuex[index].versionList.push({ipName:this.editData.ip_name,seePemission:this.editData.see_permission})
-      // }
-      // console.log(this.allCategoryListVuex)
     },
+
+    getdateTime(){
+      let yy = new Date().getFullYear();
+      let mm = new Date().getMonth() + 1;
+      let dd = new Date().getDate();
+      let hh = new Date().getHours();
+      let mf =
+          new Date().getMinutes() < 10
+          ? "0" + new Date().getMinutes()
+          : new Date().getMinutes();
+      let ss =
+          new Date().getSeconds() < 10
+          ? "0" + new Date().getSeconds()
+          : new Date().getSeconds();
+      let gettime = yy + "-" + mm + "-" + dd + " " + hh + ":" + mf + ":" + ss;
+      return gettime;
+  },
 
     handleClose(tag) {
       this.dynamicTags.splice(this.dynamicTags.indexOf(tag), 1);
@@ -1756,10 +2367,113 @@ typedef struct {\r`
           type: 'error',
         })
       }
+    },
+
+
+    calculateWResetOffset(singleList){
+      let templist = []   //存储reset值
+      for (var h = 0; h < singleList.length; ++h) {
+          let num = parseInt(singleList[h].start_bit)
+          let high_num = parseInt(singleList[h].end_bit)
+          let tempNum = num - high_num + 1
+          // var tempRsetValue;
+          // if ((singleList[h]["reset_value"]).includes("b")&&!((singleList[h]["reset_value"]).includes("h"))) {
+          //     // console.log(parseInt("1'b00100".substr(("1'b00100").indexOf("b")), 2));
+          //     tempRsetValue = parseInt((singleList[h]["reset_value"]).substr((singleList[h]["reset_value"]).indexOf("b")+1), 2)
+          // }
+          // else if ((singleList[h]["reset_value"]).includes("h")) {
+          //     tempRsetValue = parseInt((singleList[h]["reset_value"]).substr((singleList[h]["reset_value"]).indexOf("h")+1), 16)
+          // }
+          // else if ((singleList[h]["reset_value"]).includes("-")) {
+          //     tempRsetValue = parseInt((singleList[h]["reset_value"]), 10) >>> 0
+          // }
+          // else if((singleList[h]["reset_value"]).includes("d")){
+          //     tempRsetValue = parseInt(singleList[h]["reset_value"].substr((singleList[h]["reset_value"]).indexOf("d")+1))
+          // }
+          templist.push(this.reg_hex[tempNum] << parseInt(singleList[h]["end_bit"]) >>> 0)
+      }
+
+      if (templist.length != 0) {
+          const result = templist.reduce((acc, binaryValue) => {
+              return acc | binaryValue; // 进行位与运算
+          });
+          return "0x" + parseInt((result >>> 0).toString(2).padStart(32, '0'), 2).toString(16)
+      } else {
+          return "0"
+      }
+  },
+    exportTestDefine(){
+      if(this.selList.length>0){
+        for(var i in this.selList){
+            // let count = 0
+            const temp_list = this.reg_gather_list.filter(item => item.ip_uuid === this.selList[i].ip_uuid)
+            console.log(temp_list);
+            let content = `/****************************************************************
+* @file  ${this.selList[i].ip_name}.h
+* @brief ${this.selList[i].ip_name} hadware define
+* @attention
+*          Copyright (c) ${(new Date()).getFullYear()} Possumic Technology. all rights reserved.
+****************************************************************
+*/
+#ifndef _HW_${this.selList[i].ip_name.toUpperCase()}_TEST_H_
+#define _HW_${this.selList[i].ip_name.toUpperCase()}_TEST_H_
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+/** @addtopgroup ${this.selList[i].ip_name}
+ * @{
+ * */
+
+/** Type definition for device register
+ * ----------------------------------------------------------------------------
+ * */
+
+typedef struct {
+uint32_t addr;
+uint32_t val32;
+} REG_TEST
+
+REG_TEST reg_reset_array[] = {\r`
+
+          temp_list.forEach((item)=>{
+            content = content+"   {"+item.offset+", "+item.reset+"},"+" ".repeat(60-("{"+item.offset+","+item.reset+"},").length) + "//"+item.reg_gather_name+"\r"
+          })
+
+          content = content+"};\r\r"+`
+REG_TEST reg_w_mask_array[] = {\r`
+          temp_list.forEach((item)=>{
+            let tempWlist = []
+            if(item.singleReg.length>0){
+              item.singleReg.forEach((singelItem)=>{
+                if(singelItem.RW.indexOf("W")!=-1){
+                  tempWlist.push(singelItem)
+                }
+              })
+            }
+            
+            content = content+"   {"+item.offset+", "+this.formatHex(this.calculateWResetOffset(tempWlist).toUpperCase())+"},"+" ".repeat(60-("{"+item.offset+","+this.formatHex(this.calculateWResetOffset(tempWlist))+"},").length) + "//"+item.reg_gather_name+"\r"
+            console.log(this.calculateWResetOffset(tempWlist));
+          })
+          content = content +` };\r\r/**
+* @}
+* End of group HW_${this.selList[i].ip_name.toUpperCase()}
+*/
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* _HW_${this.selList[i].ip_name.toUpperCase()}_TEST_H_ */`
+
+          let strData = new Blob([content],);
+          saveAs(strData, `${this.selList[i].ip_name+"Test"}(${this.selList[i].version}).h`);
+      }
     }
-
-
-
+  }
   },
   
 

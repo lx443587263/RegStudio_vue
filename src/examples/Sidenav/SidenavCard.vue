@@ -62,7 +62,6 @@ export default {
   methods:{
     download_help_doc(){
       getHelpFileApi().then((res)=>{
-        console.log(res)
         saveAs(res, "RegStudio使用手册.docx");
       })
     },

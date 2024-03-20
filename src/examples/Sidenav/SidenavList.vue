@@ -56,7 +56,7 @@
                           </span>
                         </template>
                         <el-menu-item v-for = "(Name,index) in item.versionList" :key=index :index="'0-'+idx.toString()+'-'+index" @click="jumpIPList(item.category,Name.ipName)">{{Name.ipName}}</el-menu-item>
-                      </el-sub-menu>
+                      </el-sub-menu>   
                       <!-- <el-menu-item-group title="Group Two">
                         <el-menu-item index="1-3">item three</el-menu-item>
                       </el-menu-item-group>
@@ -64,6 +64,25 @@
                         <template #title>item four</template>
                         <el-menu-item index="1-4-1">item one</el-menu-item>
                       </el-sub-menu>-->
+                    </el-sub-menu> 
+                  </el-menu>
+                    <el-menu
+                    class="nav-link "
+                    style="border:none"
+                    :unique-opened=true
+                  >
+                    <el-sub-menu index="0" >
+                      <template #title>
+                        <span class="sidenav-normal">所有项目</span>
+                      </template>
+                      <el-sub-menu v-for="(item,idx) in allProjectListVuex" :key=idx :index="'0-'+idx.toString()" >
+                        <template #title >
+                          <span class="sidenav-normal">
+                            {{item.project}}
+                          </span>
+                        </template>
+                        <el-menu-item v-for = "(Name,index) in item.versionList" :key=index :index="'0-'+idx.toString()+'-'+index" @click="jumpProjectIPList(Name.project_uuid,Name.projectName)">{{Name.projectName.charAt(Name.projectName.length-1)}}</el-menu-item>
+                      </el-sub-menu>   
                     </el-sub-menu> 
                   </el-menu>
                   <!-- <sidenav-item
@@ -250,22 +269,22 @@
                 mini-icon="P"
                 text="Spec模版管理"
               />
-              <!-- <sidenav-item
+              <sidenav-item
                 :to="{ name: 'Data Tables' }"
                 mini-icon="D"
-                text="Data Tables"
-              /> -->
+                text="项目列表"
+              />
               <sidenav-item
                 :to="{ name: 'Kanban' }"
                 mini-icon="C"
                 text="类别管理"
               />
-              <!-- <sidenav-item
+              <sidenav-item
                 :to="{ name: 'Wizard' }"
                 mini-icon="W"
-                text="Wizard"
+                text="版本变更日志"
               />
-              <sidenav-item
+              <!-- sidenav-item
                 :to="{ name: 'Data Tables' }"
                 mini-icon="D"
                 text="Data Tables"
@@ -926,7 +945,7 @@
 import SidenavItem from "./SidenavItem.vue";
 import SidenavCollapse from "./SidenavCollapse.vue";
 import SidenavCard from "./SidenavCard.vue";
-import { getCategoryIPApi, } from "@/http/api/ip"
+import { getCategoryIPApi,getProjectIPApi } from "@/http/api/ip"
 import { mapState } from 'vuex';
 
 // import SidenavCollapseItem from "./SidenavCollapseItem.vue";
@@ -950,6 +969,7 @@ export default {
   //关联vuex获取数据
   computed:{
     ...mapState('IP',['allCategoryListVuex']),
+    ...mapState('IP',['allProjectListVuex']),
   },
   created(){
     if(this.allCategoryListVuex.length!=0){
@@ -958,9 +978,13 @@ export default {
         this.allCategoryListVuex[i].versionList = this.allCategoryListVuex[i].versionList.filter(item => item.seePermission.includes(localStorage.getItem('user')));
       }
     }
+    // if(this.allProjectListVuex.length!=0){
+    //   for (var j in this.allProjectListVuex){
+    //     this.allProjectListVuex[j].versionList = this.allProjectListVuex[j].versionList.filter(item => item.seePermission.includes(localStorage.getItem('user')));
+    //   }
+    // }
   },
   methods: {
-
     getRoute() {
       const routeArr = this.$route.path.split("/");
       return routeArr[1];
@@ -978,8 +1002,20 @@ export default {
       this.$router.push({
         path: "/ecommerce/Orders/order-list",
         name: "Order List",
+        params:{source:"category"}
+      })
+    },
+    jumpProjectIPList(project,version){
+      getProjectIPApi(project).then((res)=>{
+        this.$store.commit('IP/getProjectIpList',res)
+      })
+      this.$router.push({
+        path: "/ecommerce/Orders/order-list",
+        name: "Order List",
+        params:{source:"project",version:version}
       })
     }
+    
   }
 };
 </script>

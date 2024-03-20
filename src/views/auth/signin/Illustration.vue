@@ -130,7 +130,8 @@ import {reactive,ref} from "vue";
 import {useRouter} from "vue-router";
 import {userLogin} from "@/http/api/login";
 import { getIpListApi } from "@/http/api/ip"
-import { getCategoryListApi } from "../../../http/api/ip";
+import { getCategoryListApi } from "@/http/api/ip";
+import { getProjectApi ,getProjecNameApi} from "@/http/api/project";
 import { getTemplateFileListApi} from "@/http/api/template_file"
 import serverConfig from "../../../http/config/index";
 import {userGet} from "@/http/api/user"
@@ -187,15 +188,47 @@ export default {
           }
         }
         allCategoryList_temp = tempAllCategoryList.filter((item, index) => tempAllCategoryList.findIndex(i => i.category === item.category) === index);
-        // allCategoryList_temp = JSON.parse(JSON.stringify(tempAllCategoryList.filter((item, index) => tempAllCategoryList.findIndex(i => i.category === item.category) === index)))
-        // localStorage.setItem('allCategoryListVuex',JSON.stringify(allCategoryList_temp))
         await store.commit('IP/allCategoryList',allCategoryList_temp)
       }
     }
 
+
+    //获取项目列表
+    let allProjectList_temp = []
+    let projectKV = new Map()
+    const getProjectList= ()=>{
+       getProjectApi().then( (res)=>{
+        for(var i=0;i<res.length;++i){
+          allProjectList_temp.push(res[i].project)
+          projectKV.set(res[i].project_uuid,res[i].project+res[i].version)
+        }
+        store.commit('project/getProjectKV',projectKV)
+        getProjecVersionList()
+      })
+    }
+    const getProjecVersionList =()=>{
+      let test = []
+      allProjectList_temp = [...new Set(allProjectList_temp)];
+      allProjectList_temp.forEach(element=>{
+        let temp = {}
+        temp.project = element
+        temp.versionList = []
+        getProjecNameApi(element).then((re)=>{
+          re.forEach(el=>{
+            let tempObj = {projectName:el.project+el.version,project_uuid:el.project_uuid}
+            temp.versionList.push(tempObj)
+          })
+        })
+        test.push(temp)
+      })
+      store.commit('IP/allProjectList',test)
+    }
+
+
     getIpListApi().then(async (res)=>{
       await store.commit('IP/getIpList',res)
       getCategoryList(res)
+      getProjectList()
     })
 
     async function doLogin() {
@@ -267,7 +300,9 @@ export default {
       handleKeyDown,
       rememberMe,
       getCategoryList,
-      imageUrl
+      imageUrl,
+      getProjectList,
+      getProjecVersionList
     }
   },
   created() {

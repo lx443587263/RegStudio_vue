@@ -16,6 +16,15 @@ export const getCategoryListApi=(category)=>{
   });
 }
 
+//查项目
+export const getProjectListApi=(project)=>{
+  return serviceAxios({
+      url: "/ip/ipinfo/?project="+project,
+      method: "get",
+  });
+}
+
+
 //查IPName
 export const getIpNameListApi=(ipName)=>{
   return serviceAxios({
@@ -24,10 +33,26 @@ export const getIpNameListApi=(ipName)=>{
   });
 }
 
+//查IP UUID
+export const getIpUuidApi=(ipUuid)=>{
+  return serviceAxios({
+      url: "/ip/ipinfo/?ip_uuid="+ipUuid,
+      method: "get",
+  });
+}
+
 //多条件查
 export const getCategoryIPApi=(category,name)=>{
   return serviceAxios({
       url: "/ip/ipinfo/?category="+category+"&ip_name="+name,
+      method: "get",
+  });
+}
+
+//多条件查项目
+export const getProjectIPApi=(project)=>{
+  return serviceAxios({
+      url: "/ip/ipinfo/?project="+project,
       method: "get",
   });
 }
@@ -53,6 +78,9 @@ export const deleteIp=(uuid)=>{
 
 //改
 export const editIpVersion=(uuid,data)=>{
+  if(data.project==""){
+    data.project = null
+  }
   return serviceAxios({
     url: "/ip/ipinfo/?ip_uuid="+uuid,
     method: "put",
