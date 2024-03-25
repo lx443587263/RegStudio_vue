@@ -1,5 +1,14 @@
 import serviceAxios from "../index";
 
+
+//查所有
+export const getRegGatherAllList=(reg_gather_uuid)=>{
+    return serviceAxios({
+        url: "ip/regGather/?reg_gather_uuid="+reg_gather_uuid,
+        method: "get",
+    });
+}
+
 //查
 export const getRegGatherList=(uuid)=>{
     return serviceAxios({

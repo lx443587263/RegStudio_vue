@@ -129,12 +129,12 @@ import { mapMutations,useStore } from "vuex";
 import {reactive,ref} from "vue";
 import {useRouter} from "vue-router";
 import {userLogin} from "@/http/api/login";
-import { getIpListApi } from "@/http/api/ip"
-import { getCategoryListApi } from "@/http/api/ip";
+import { getIpListApi,getCategoryListApi } from "@/http/api/ip"
 import { getProjectApi ,getProjecNameApi} from "@/http/api/project";
 import { getTemplateFileListApi} from "@/http/api/template_file"
 import serverConfig from "../../../http/config/index";
 import {userGet} from "@/http/api/user"
+// import { useState } from '@/store/hook/useState';
 
 export default {
   name: "SigninIllustration",
@@ -181,9 +181,9 @@ export default {
                   tempVersionList.push(temp)
                 }
               }
+              tempVersionList.sort((a,b)=> {return a.ipName.localeCompare(b.ipName)})
               ipCategory.versionList = tempVersionList;
             })
-
             tempAllCategoryList.push(ipCategory)
           }
         }
@@ -231,6 +231,10 @@ export default {
       getProjectList()
     })
 
+    // const storeState = useState('IP', ['ip_lists'])
+  
+    // let tableData = reactive(computed())
+
     async function doLogin() {
       // 1.向后台发送请求且登录成功
       // 2.返回信息
@@ -260,6 +264,12 @@ export default {
           path:"/pages/profile/projects",
           name: "All Projects"
         })
+        // storeState.ip_lists.value.forEach(resp=>{
+        //   if(resp.category=="Interface"||resp.category=="Soc系统组件"){
+        //     resp.see_permission=resp.see_permission+","+state.username
+        //     editIpVersion(resp.ip_uuid,resp)
+        //   }
+        // })
       })
       }catch(error){
         state.errorMessage = error
@@ -276,7 +286,6 @@ export default {
         await localStorage.removeItem('password');
       }
     }
-
 
     // 如果 localStorage 中有保存的用户名和密码，自动填充表单
     if (localStorage.getItem('username') && localStorage.getItem('password')) {

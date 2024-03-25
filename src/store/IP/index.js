@@ -18,6 +18,7 @@ const IP={
                 tags:"",
                 see_permission:"",
                 child_version:"",
+                reg_version:""
             },
             ip_lists:[],
             category_ip:[],
@@ -48,20 +49,24 @@ const IP={
             }
         },
         getIpList:function(state,list){
+            list.sort((a,b)=> {return a.ip_name.localeCompare(b.ip_name)})
             state.ip_lists = list;
+
         },
         setFinalIPList:function(state,list){
             state.final_ip = list;
         },
         setCurrentIpUuid(state,ip_uuid){
             state.current_ip_uuid = ip_uuid
-        },
+        }, 
         allCategoryList(state,list){
             state.allCategoryListVuex = list;
         },
         allProjectList(state,list){
             state.allProjectListVuex = list
-
+            state.allProjectListVuex.sort(function(a,b){
+                return a.project>b.project?1:-1
+            })
         },
         getCategoryIpList(state,list){
             if(localStorage.getItem('user')!='admin'){
@@ -79,6 +84,7 @@ const IP={
             state.final_ip = state.category_ip;
         },
         getProjectIpList(state,list){
+            console.log("project",list)
             if(localStorage.getItem('user')!='admin'){
                 state.project_ip = []
                 for(var i in list){
@@ -126,6 +132,7 @@ const IP={
             state.ip_info.tags = ip_info.tags;
             state.ip_info.see_permission = ip_info.see_permission;
             state.ip_info.child_version = ip_info.child_version;
+            state.ip_info.reg_version = ip_info.reg_version
             if(!state.ip_info.see_permission){
                 state.ip_info.see_permission = "admin"
             }

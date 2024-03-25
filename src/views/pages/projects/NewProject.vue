@@ -65,7 +65,7 @@
               <el-form-item v-if="ip_info.private_project" label="Version" prop="version">
                 <el-input v-model="ip_info.version" placeholder="e.g.v0.1 v0.2"/>
               </el-form-item>
-              <el-form-item v-else label="Version" prop="version">
+              <el-form-item v-else label="RTL Version" prop="version">
                 <el-input v-model="ip_info.version" placeholder="e.g.v0.1 v0.2"/>
               </el-form-item>
             </div>
@@ -76,17 +76,27 @@
             </div>
           </div>
           <!--项目名-->
-          <el-form-item v-if="ip_info.private_project" label="Porject" prop="project">
-            <el-select v-model="ip_info.project" placeholder="please select Project" style="width: 100%">
-                <!-- <el-option label="Interface" value="Interface" /> -->
-                <el-option v-for="(item,index) in project_list" :key="index" :label=item.project+item.version :value=item.project_uuid></el-option>
-              </el-select>
-            <!-- <el-input v-model="ip_info.projec"/> -->
-          </el-form-item>
-          <el-form-item v-else label="Porject" prop="project">
-            <MultipleSelect v-model="value" :options="options"></MultipleSelect>
-          </el-form-item>
-          <!--项目名-->
+          <div class="row">
+            <div class="col-6">
+              <el-form-item v-if="ip_info.private_project" label="Porject" prop="project" >
+              <el-select v-model="ip_info.project" placeholder="please select Project" style="width: 100%">
+                  <!-- <el-option label="Interface" value="Interface" /> -->
+                  <el-option v-for="(item,index) in project_list" :key="index" :label=item.project+item.version :value=item.project_uuid></el-option>
+                </el-select>
+              <!-- <el-input v-model="ip_info.projec"/> -->
+              </el-form-item>
+              <el-form-item v-else label="Porject" prop="project" >
+                <MultipleSelect v-model="value" :options="options"></MultipleSelect>
+              </el-form-item>
+            </div>
+            <div class="col-6">
+              <el-form-item label="Reg Version" prop="reg_version">
+                <el-input v-model="ip_info.reg_version"/>
+              </el-form-item>
+            </div>
+          </div>
+
+
           <el-form-item label="IP Description" prop="description">
             <el-input v-model="ip_info.description" type="textarea" />
           </el-form-item>
@@ -326,7 +336,8 @@ export default {
         version:"",
         child_version:"",
         see_permission:"",
-        project:""
+        project:"",
+        reg_version:""
       },
       config: {
         allowInput: true,
@@ -334,8 +345,9 @@ export default {
       rules:{
         ip_name:{required: true, message: 'Please input IP name', trigger: 'blur' },
         category:{required: true, message: 'Please Select Category', trigger: 'blur' },
-        version:{required: true, message: 'Please input version', trigger: 'blur'},
-        // child_version:{required: true, message: 'Please input child_version', trigger: 'blur'},
+        version:{required: true, message: 'Please input RTL version,e.g v0.1 v1.0', trigger: 'blur',pattern:/^[vV]\d+(\.\d+)?/},
+        reg_version:{required: true, message: 'Please input reg version,e.g v0.1 v1.0', trigger: 'blur',pattern:/^[vV]\d+(\.\d+)?/},
+        child_version:{required: true, message: 'Please input child_versione,.g A B', trigger: 'blur',pattern:/^[A-Z]/},
       },
       Option:{
         key: Number,
@@ -395,7 +407,7 @@ export default {
         style:"width: 100%"
       });
     }
-
+    
     if (document.getElementById("choices-multiple-remove-button")) {
       var element = document.getElementById("choices-multiple-remove-button");
       const example = new Choices(element, {
@@ -470,6 +482,9 @@ export default {
                 editProjectApi(it.project_uuid,it)
               })
             })
+          }
+          if(!this.ip_info.private_project){
+            this.ip_info.child_version = "NA"
           }
           this.addNewIP(this.ip_info);
           getCategoryListApi(this.ip_info.category).then(async (res)=>{        

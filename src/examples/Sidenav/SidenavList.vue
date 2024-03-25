@@ -43,11 +43,30 @@
                     style="border:none"
                     :unique-opened=true
                   >
+                    <el-sub-menu index="0" >
+                      <template #title>
+                        <span class="sidenav-normal">按芯片</span>
+                      </template>
+                      <el-sub-menu v-for="(item,idx) in allProjectListVuex" :key=idx :index="'0-'+idx.toString()" >
+                        <template #title >
+                          <span class="sidenav-normal">
+                            {{item.project}}
+                          </span>
+                        </template>
+                        <el-menu-item v-for = "(Name,index) in item.versionList" :key=index :index="'0-'+idx.toString()+'-'+index" @click="jumpProjectIPList(Name.project_uuid,Name.projectName)">{{Name.projectName.charAt(Name.projectName.length-1)}}</el-menu-item>
+                      </el-sub-menu>   
+                    </el-sub-menu> 
+                  </el-menu>
+                  <el-menu
+                    class="nav-link "
+                    style="border:none"
+                    :unique-opened=true
+                  >
                   <!-- @open="handleOpen"
                     @close="handleClose" -->
                     <el-sub-menu index="0" >
                       <template #title>
-                        <span class="sidenav-normal">所有IP</span>
+                        <span class="sidenav-normal">按IP</span>
                       </template>
                       <el-sub-menu v-for="(item,idx) in allCategoryListVuex" :key=idx :index="'0-'+idx.toString()" >
                         <template #title >
@@ -66,25 +85,7 @@
                       </el-sub-menu>-->
                     </el-sub-menu> 
                   </el-menu>
-                    <el-menu
-                    class="nav-link "
-                    style="border:none"
-                    :unique-opened=true
-                  >
-                    <el-sub-menu index="0" >
-                      <template #title>
-                        <span class="sidenav-normal">所有项目</span>
-                      </template>
-                      <el-sub-menu v-for="(item,idx) in allProjectListVuex" :key=idx :index="'0-'+idx.toString()" >
-                        <template #title >
-                          <span class="sidenav-normal">
-                            {{item.project}}
-                          </span>
-                        </template>
-                        <el-menu-item v-for = "(Name,index) in item.versionList" :key=index :index="'0-'+idx.toString()+'-'+index" @click="jumpProjectIPList(Name.project_uuid,Name.projectName)">{{Name.projectName.charAt(Name.projectName.length-1)}}</el-menu-item>
-                      </el-sub-menu>   
-                    </el-sub-menu> 
-                  </el-menu>
+
                   <!-- <sidenav-item
                     :to="{ name: 'All Projects' }"
                     mini-icon="A"
@@ -931,7 +932,7 @@
         description: 'Please check our docs',
         links: [
           {
-            label: 'Documentation',
+            label: 'RegStudio使用说明',
             // route:
             //   'https://www.creative-tim.com/learning-lab/vue/overview/argon-dashboard/',
             color: 'dark'

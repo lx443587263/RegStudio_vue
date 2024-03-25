@@ -280,15 +280,15 @@
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column label="Actions" >
+              <el-table-column label="Actions" width="350px">
                 <template #default="scope">
                   <el-button 
                     v-if="current_user==='admin'||scope.row.create_user===current_user" 
                     v-permission="['admin','edit','create','delete']" 
                     type="primary" 
                     text 
-                    @click="editRow(scope.row,scope.$index)">Edit</el-button>
-                  <el-button type="primary" text @click="entryRegGather(scope.row)">Enter</el-button>
+                    @click="editRow(scope.row,scope.$index)">Edit IP</el-button>
+                  <el-button type="primary" text @click="entryRegGather(scope.row)">View Reg</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -304,11 +304,20 @@
                     <el-option value="Canceled">中止</el-option>
                   </el-select>
                 </el-form-item>
-                <el-form-item label="Version" :label-width="formLabelWidth">
+                <el-form-item label="RTL Version" :label-width="formLabelWidth">
                   <el-input v-model="editData.version" autocomplete="off" />
                 </el-form-item>
                 <el-form-item label="Chip Version" :label-width="formLabelWidth">
                   <el-input v-model="editData.child_version" autocomplete="off" />
+                </el-form-item>
+                <el-form-item label="Reg Version" :label-width="formLabelWidth">
+                  <el-input v-model="editData.reg_version" autocomplete="off" />
+                </el-form-item>
+                <el-form-item label="Change SOC系统组件" :label-width="formLabelWidth">
+                  <input v-model="changeSoC" type="checkbox" />
+                    <label class="form-check-label" for="flexCheckDefault">
+                      是否更改种类为SoC系统组件
+                    </label>
                 </el-form-item>
                 <el-form-item label="Category" :label-width="formLabelWidth">
                   <el-select v-model="editData.category" style="width: 100%">
@@ -336,7 +345,6 @@
                 <el-form-item v-else label="Project" :label-width="formLabelWidth">
                   <MultipleSelect v-model="value" :options="options"></MultipleSelect>
                 </el-form-item>
-
                 <el-form-item label="Description" :label-width="formLabelWidth">
                   <el-input v-model="editData.description" autocomplete="off" />
                 </el-form-item>
@@ -403,7 +411,6 @@ import { getIpListApi,deleteIp,getIpPageFileApi,perviewIpPageFileApi} from "@/ht
 import { getCategoryApi } from "@/http/api/category"
 import { getProjectApi,editProjectApi,getProjecNameApi} from "@/http/api/project"
 import { addProjectChangeApi } from "@/http/api/projectchange"
-
 import { getRegGatherList } from "@/http/api/reggather"
 import { editIpVersion } from '@/http/api/ip';
 import { v4 as uuidv4 } from 'uuid';
@@ -412,10 +419,10 @@ import { getSingleList } from "@/http/api/singlereg";
 import { getValueList} from "@/http/api/value";
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
+import { renderAsync } from "docx-preview";
 import { saveAs } from "file-saver";
 import {getTemplateFileApi} from "@/http/api/template_file";
 import { ElMessage } from 'element-plus';
-import { renderAsync } from "docx-preview";
 import ExcelJS from "exceljs";
 import { getCategoryListApi} from "@/http/api/ip";
 import { getmark } from "@/util/watermark";
@@ -471,13 +478,14 @@ export default {
       columnList: [
       { prop: "project", label: 'Project'},
         { prop: "ip_name", label: 'IPName' },
-        { prop: "version", label: 'RTL Ver',width:'100px' },
         // { prop: "start_date",label:'StartDate' },
         { prop: "status", label: 'Status' ,width:'100px'},
         { prop: "create_user", label: 'CreateUser' },
         { prop: "category", label: 'Category',width:'100px' },
-        { prop: "description", label: 'Description' },
+        { prop: "version", label: 'RTL Ver',width:'100px' },
+        { prop: "reg_version", label: 'Reg Version' },
         { prop: "child_version", label: 'Chip Version',width:'120px' },
+        { prop: "description", label: 'Description' },
         { prop: "tags", label: 'Tags' },
       ],
       CDefineList:[
@@ -537,6 +545,7 @@ export default {
       allProjectList_temp:[],
       PerviewDisable:false,
       checkAll:false,
+      changeSoC:false,
       isIndeterminate:true,
       checkedCities:["Reg Name", "Sub Reg Name", "Offset Addr","Bit Width", "Default Value", "Soft R/W","HW R/W","Addr", "reg/ram", "Retention", "Describe"],
       cities:["Reg Name", "Sub Reg Name", "Offset Addr","Bit Width", "Default Value", "Soft R/W","HW R/W","Addr", "reg/ram", "Retention", "Describe","Mask"],
@@ -668,6 +677,7 @@ export default {
   created(){
     getIpListApi().then((res)=>{
         this.$store.commit('IP/getIpList',res)
+        this.final_ip.sort((a,b)=> {return a.ip_name.localeCompare(b.ip_name)})
         this.showData = this.final_ip
     })
     this.generateData()
@@ -764,7 +774,7 @@ export default {
           tempPro.forEach(item=>{
             str = str+" "+ this.projectKV.get(item)
           })
-          this.$confirm('此操作将影响' + str+ '等项目, 是否继续?', '提示', {
+          this.$confirm('修改寄存器内容将影响' + str+ '等项目。', '提示', {
             confirmButtonText: '确定',
             cancelButtonText: '取消',
             type: 'warning'
@@ -844,6 +854,7 @@ export default {
                   tempVersionList.push(temp)
                 }
               }
+              tempVersionList.sort((a,b)=> {return a.ipName.localeCompare(b.ipName)})
               ipCategory.versionList = tempVersionList;
             })
 
@@ -1362,6 +1373,32 @@ export default {
 
     //修改ip
     handleEdit(){
+      if(this.editData.child_version){
+        const reg = /^[A-Z]/;
+        if(!reg.test(this.editData.child_version))
+        {
+          this.$message.error("芯片版本必须为大写字母")
+          return
+        }
+      }
+      if(this.editData.version){
+        const reg = /^[vV]\d+(\.\d+)?/;
+        if(!reg.test(this.editData.version))
+        {
+          this.$message.error("RTL版本格式必须类似于v0.1,v1.0")
+          return
+        }
+      }
+      if(this.editData.reg_version){
+        const reg = /^[vV]\d+(\.\d+)?/;
+        if(!reg.test(this.editData.reg_version))
+        {
+          this.$message.error("Reg版本格式必须类似于v0.1,v1.0")
+          return
+        }
+      }
+
+
       if (this.editData.version >= this.oldVersion) {
         let tempData = {}
         tempData.source_project_uuid = this.editData.project
@@ -1377,8 +1414,8 @@ export default {
           this.editData.see_permission = null
         }
         if (this.editData.private_project === false) {
+          this.editData.child_version="NA"
           let tempSocPro = [];
-
           tempData.source_project = tempSocPro.join(',')
           if (this.editData.project == null) {
             this.editData.project = this.value.join(",")
@@ -1399,8 +1436,7 @@ export default {
               tempDesList.push(this.projectKV.get(item))
             })
             tempData.des_project = tempDesList.join(",")
-          }
-          else {
+          }else {
             let tempList
             let set1 = new Set(this.oldProject.split(',')), set2 = new Set(this.value);
             tempList= [...this.oldProject.split(',').filter(item => set2.has(item) == false), ...this.value.filter(item => set1.has(item) == false)];
@@ -1452,6 +1488,11 @@ export default {
               tempData.des_project = tempDesList.join(",")
             }
 
+          }
+          if(this.changeSoC){
+            console.log("change SoC")
+            this.editData.private_project = true
+            this.editData.category = "SoC系统组件"
           }
           if (this.editData.version != this.oldVersion) {
             var res = this.final_ip.some((item) => {
@@ -1540,13 +1581,13 @@ export default {
           this.getCategoryList(res)
           this.getProjectList();
         })
-        if(this.editData.child_version){
+        if(this.editData.child_version && this.editData.child_version!="NA"){
           tempData.operate_ip_name = this.editData.ip_name+"("+this.editData.version+this.editData.child_version+")"
         }else{
           tempData.operate_ip_name = this.editData.ip_name+this.editData.version
         }
         tempData.data =  this.getdateTime()
-        addProjectChangeApi(tempData)
+        addProjectChangeApi(tempData) 
         // const index = this.allCategoryListVuex.findIndex((item)=>item.category===this.editData.category)
         // if(index===-1){
         //   const tempObj = {category:this.editData.category,versionList:[{ipName:this.editData.ip_name,seePemission:this.editData.see_permission}]}

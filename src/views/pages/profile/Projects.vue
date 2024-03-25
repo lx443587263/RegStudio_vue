@@ -5,7 +5,7 @@
         <div class="text-left col-md-8 me-auto">
           <h5>IP 类别</h5>
           <p>
-            以下是当前多有的IP类别
+            以下是当前所有的IP类别
           </p>
         </div>
       </div>

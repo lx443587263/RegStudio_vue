@@ -114,8 +114,7 @@
 import ArgonButton from "@/components/ArgonButton.vue";
 import { getCategoryApi,deleteCategoryApi,addCategoryApi,editCategoryApi } from "@/http/api/category"
 import { mapState } from 'vuex';
-
-
+import { editIpVersion,getCategoryListApi,getIpListApi} from '@/http/api/ip';
 export default {
   name: "Kanban",
   components: {
@@ -128,11 +127,13 @@ export default {
       cataegoryData:{
         category:"",
       },
+      oldCategory:"",
       editData:{}
     }
   },
   computed:{
     ...mapState('category',['category_list']),
+    ...mapState('IP',['ip_lists'])
   },
   created(){
     getCategoryApi().then((res)=>{
@@ -174,13 +175,60 @@ export default {
     },
     handleEdit(row){
       this.editData = row
+      this.oldCategory = row.category
       this.dialogEditVisible = true
     },
     editCategoryData(){
-      editCategoryApi(this.editData.category,this.editData)
+      editCategoryApi(this.editData.category,this.editData).then(resp=>{
+          if(!resp.error){
+            getIpListApi().then((res)=>{
+              this.$store.commit('IP/getIpList',res)
+              this.getCategoryList(res)
+            })
+          }
+        }
+      )
+      this.ip_lists.forEach(element => {
+        if(element.category == this.oldCategory){
+          element.category = this.editData.category
+          editIpVersion(element.ip_uuid,element)
+        }
+      });
       this.$message.success('修改成功')
       this.dialogEditVisible = false
-    }
+    },
+    getCategoryList (list){
+      if(list){
+        let tempAllCategoryList = []
+        let allCategoryList_temp = []
+        for(var item in list){
+          if(list[item].category){
+            let ipCategory = {}
+            ipCategory.category=list[item].category
+            ipCategory.versionList = []
+            let tempVersionList = []
+            getCategoryListApi(list[item].category).then((res)=>{
+              for(var i in res){
+                let temp = {}
+                temp.ipName = res[i].ip_name
+                temp.seePermission = res[i].see_permission
+                const findIpName = tempVersionList.findIndex(i=>i.ipName === temp.ipName)
+                if(findIpName == -1){
+                  tempVersionList.push(temp)
+                }
+              }
+              tempVersionList.sort((a,b)=> {return a.ipName.localeCompare(b.ipName)})
+              ipCategory.versionList = tempVersionList;
+            })
+
+            tempAllCategoryList.push(ipCategory)
+          }
+        }
+        allCategoryList_temp = tempAllCategoryList.filter((item, index) => tempAllCategoryList.findIndex(i => i.category === item.category) === index);
+        console.log(allCategoryList_temp)
+        this.$store.commit('IP/allCategoryList',allCategoryList_temp)
+      }
+    },
   },
 };
 </script>

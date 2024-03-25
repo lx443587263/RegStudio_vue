@@ -78,6 +78,7 @@ export const deleteIp=(uuid)=>{
 
 //改
 export const editIpVersion=(uuid,data)=>{
+  console.log(data)
   if(data.project==""){
     data.project = null
   }

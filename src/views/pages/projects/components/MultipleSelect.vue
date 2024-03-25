@@ -1,5 +1,5 @@
 <template>
-    <el-select v-model="selectValues" v-bind="$attrs" multiple placeholder="请选择" style="width: 50%" @change="changeSelect">
+    <el-select v-model="selectValues" v-bind="$attrs" multiple placeholder="请选择" style="width: 100%" @change="changeSelect">
       <!-- <el-option v-if="options.length" label="全选" value="全选">
         <el-checkbox v-model="isSelectAll" @click.prevent>全选</el-checkbox>
       </el-option> -->
